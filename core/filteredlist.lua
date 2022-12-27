@@ -3,7 +3,7 @@
 -- License: MIT (see LICENSE)
 
 --[[--
-Filtered list wrapper, hijacking `ui.dialogs.filteredlist`.
+Filtered list wrapper, hijacking `ui.dialogs.list`.
 
 @module textredux.core.filteredlist
 ]]
@@ -12,7 +12,7 @@ local list = require 'textredux.core.list'
 
 local M = {}
 
-local ui_filteredlist = ui.dialogs.filteredlist
+local ui_filteredlist = ui.dialogs.list
 local current_coroutine
 
 local function convert_multi_column_table(nr_columns, items)
@@ -33,7 +33,7 @@ local function index_of(element, table)
   end
 end
 
-ui.dialogs.filteredlist = function(options)
+ui.dialogs.list = function(options)
   if not current_coroutine then
     return ui_filteredlist(options)
   end
@@ -49,9 +49,9 @@ ui.dialogs.filteredlist = function(options)
   local l = list.new(title, items)
   if columns then l.headers = columns end
   l.on_selection = function(l, item)
-    local value = not options.string_output and index_of(item, items) or item
+    local value = index_of(item, items)
     l:close()
-    coroutine.resume(co, options.string_output and _L['_OK'] or 1, value)
+    coroutine.resume(co, value)
   end
   l:show()
   return coroutine.yield()
