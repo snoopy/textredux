@@ -407,6 +407,23 @@ local function create_list(directory, filter, depth, max_files)
   local list = reduxlist.new(directory)
   local data = list.data
   list.column_styles = {get_file_style}
+  list.keys['f7'] = function()
+    local foldername, button = ui.dialogs.input({
+      title = 'New folder',
+      button1 = 'OK',
+      button2 = 'Cancel',
+      return_button = true,
+      })
+      if button == 1 then
+        foldername = foldername:gsub('^.*[/\\]', '')
+        local path = list.data.directory .. '/' .. foldername
+        if WIN32 then
+          path = path:gsub('/', '\\')
+        end
+        os.spawn('mkdir ' .. path):wait()
+        chdir(list, list.data.directory)
+    end
+  end
   list.keys["ctrl+s"] = toggle_snap
   list.keys['/'] = function()
     if WIN32 then
