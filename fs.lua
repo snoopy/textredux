@@ -432,7 +432,7 @@ local function create_list(directory, filter, depth, max_files)
       chdir(list, '/')
     end
   end
-  list.keys['~'] = function()
+  list.keys['+'] = function()
     if user_home then chdir(list, user_home) end
   end
   list.keys['alt+up'] = function()
