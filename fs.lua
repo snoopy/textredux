@@ -338,7 +338,7 @@ local function get_file_style(item, index)
   return file_styles[item.mode] or reduxstyle.default
 end
 
-local function toggle_snap(list)
+local function toggle_flatten(list)
   -- Don't toggle for list of Windows drives
   if WIN32 and list.data.directory == "" then return end
   local data = list.data
@@ -424,7 +424,7 @@ local function create_list(directory, filter, depth, max_files)
         chdir(list, list.data.directory)
     end
   end
-  list.keys["ctrl+s"] = toggle_snap
+  list.keys["alt+f"] = toggle_flatten
   list.keys['/'] = function()
     if WIN32 then
       display_windows_root(list)
