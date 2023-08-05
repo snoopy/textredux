@@ -306,17 +306,16 @@ end
 
 local function open_selected_file(path, exists, list)
   if not exists then
-    local retval = ui.dialogs.message
+    local button = ui.dialogs.message
     {
       title = 'Create new file',
       text = path .. "\ndoes not exist, do you want to create it?",
       icon = 'dialog-question',
-      button1 = 'Cancel',
-      button2 = 'Create file'
+      button1 = 'Create file',
+      button2 = 'Cancel',
     }
-    if retval ~= 2 then
-      return
-    end
+    if button == 2 then return end
+
     local file, error = io.open(path, 'wb')
     if not file then
       ui.statusbar_text = 'Could not create ' .. path .. ': ' .. error
@@ -324,6 +323,7 @@ local function open_selected_file(path, exists, list)
     end
     file:close()
   end
+
   list:close()
   io.open_file(path)
 end
@@ -602,17 +602,15 @@ function M.save_buffer_as()
     list:close()
 
     if exists then
-      local retval = ui.dialogs.msgbox
+      local button = ui.dialogs.msgbox
       {
         title = 'Save buffer as',
         text = path .. "\nexists already!\n\nDo you want to overwrite it?",
         icon = 'dialog-question',
-        button1 = 'Cancel',
-        button2 = 'Overwrite'
+        button1 = 'Overwrite',
+        button2 = 'Cancel',
       }
-      if retval ~= 2 then
-        return
-      end
+      if button == 2 then return end
     end
 
     _G.buffer:save_as(path)
