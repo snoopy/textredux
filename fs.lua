@@ -602,7 +602,7 @@ function M.save_buffer_as()
     list:close()
 
     if exists then
-      local button = ui.dialogs.msgbox
+      local button = ui.dialogs.message
       {
         title = 'Save buffer as',
         text = path .. "\nexists already!\n\nDo you want to overwrite it?",
