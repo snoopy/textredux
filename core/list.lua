@@ -60,7 +60,7 @@ list.match_highlight_style = reduxstyle.list_match_highlight
 -- explicit styles. In the latter case, the function will be invoked with the
 -- corresponding item and column index. The default styles contains styles for
 -- up to three columns, after which the default style will be used.
-list.column_styles = {reduxstyle.string, reduxstyle.keyword, reduxstyle.type}
+list.column_styles = {reduxstyle.nothing, reduxstyle.nothing, reduxstyle.nothing}
 
 --- Whether searches are case insensitive or not.
 -- It's possible to override this for a specific list by assigning another
