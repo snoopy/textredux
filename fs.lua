@@ -240,7 +240,7 @@ local function find_files(directory, filter, depth, max_files)
   local directories = { file(directory) }
   while #directories > 0 do
     local dir = table.remove(directories)
-    if dir.depth > 1 then files[#files + 1] = dir end
+    if dir.depth > 1 and #filter == 0 then files[#files + 1] = dir end
     if dir.depth <= depth then
       local status, entries, dir_obj = pcall(lfs.dir, dir.path)
       if status then
