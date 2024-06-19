@@ -149,69 +149,6 @@ local function normalize_dir_path(directory)
   return path:gsub("[\\/]?%.?[\\/]?$", separator)
 end
 
-local function parse_filters(filter)
-  local filters = {}
-  for _, restriction in ipairs(filter) do
-    if type(restriction) == 'string' then
-      local negated = restriction:match('^!(.+)')
-      local filter_pattern = negated or restriction
-
-      restriction = function(path)
-        if path:match(filter_pattern) then
-          if not negated then return true end
-        elseif negated then return true
-        else return false end
-      end
-    end
-    filters[#filters + 1] = restriction
-  end
-  return filters
-end
-
-local function add_extensions_filter(filters, extensions)
-  if extensions and #extensions > 0 then
-    local exts = {}
-    for _, ext in ipairs(extensions) do exts[ext] = true end
-    filters[#filters + 1] = function(path)
-      return exts[string_match(path, '%.(%a+)$')] ~= nil
-    end
-  end
-end
-
--- Given the patterns, returns a function returning true if
--- the path should be filtered, and false otherwise
-local function create_filter(filter)
-  local filters = parse_filters(filter)
-  add_extensions_filter(filters, filter.extensions)
-  filters.directory = parse_filters(filter.folders or {})
-  return function(file)
-    local filters = filters[file.mode] or filters
-    for _, filter in ipairs(filters) do
-      if filter(file.path) then return true end
-    end
-    return false
-  end
-end
-
--- create a filter for quick_open based on lfs.default_filter
-local function create_qopen_filter(filter)
-  filter['folders'] = filter['folders'] or {}
-  filter['extensions'] = filter['extensions'] or {}
-
-  for _, pattern in pairs(lfs.default_filter) do
-    pattern = pattern:match('..(.+)')
-    local pattern_type = ''
-    if pattern:match('%$$') then
-      pattern_type = 'folders'
-    else
-      pattern_type = 'extensions'
-    end
-    filter[pattern_type][#filter[pattern_type] + 1] = pattern
-  end
-
-  return filter
-end
-
 local function file(path, name, parent)
   local file, error = fs_attributes(path)
   if error then file = { mode = 'error' } end
@@ -229,11 +166,33 @@ local function file(path, name, parent)
   return file
 end
 
+local function is_filtered(filepath, filter)
+  if filepath:match('.+[/\\]' .. updir_pattern) then
+    return true
+  end
+  for _, filter_value in ipairs(filter) do
+    local pattern = filter_value
+    pattern = pattern:gsub('!', '')
+    pattern = pattern:gsub('%.', '%%.')
+
+    if pattern:find('/') then
+      pattern = pattern .. '/'
+      pattern = pattern:gsub('/', '[/\\]')
+    else
+      pattern = pattern .. '$'
+    end
+
+    if filepath:find(pattern) then
+      return true
+    end
+  end
+  return false
+end
+
 local function find_files(directory, filter, depth, max_files)
   if not directory then error('Missing argument #1 (directory)', 2) end
   if not depth then error('Missing argument #3 (depth)', 2) end
 
-  if type(filter) ~= 'function' then filter = create_filter(filter) end
   local files = {}
 
   directory = normalize_path(directory)
@@ -246,17 +205,22 @@ local function find_files(directory, filter, depth, max_files)
       if status then
         for entry in entries, dir_obj do
           local file = file(dir.path .. separator .. entry, entry, dir)
-          if not filter(file) then
-            if file.mode == 'directory' and entry ~= '..' and entry ~= '.' then
-              table.insert(directories, 1, file)
-            else
-              if max_files and #files == max_files then return files, false end
-              -- Workaround check for top-level (virtual) Windows drive
-              if not (WIN32 and #dir.path == 3 and entry == '..') then
-                files[#files + 1] = file
-              end
+
+          if is_filtered(file.path, filter) then
+            goto continue
+          end
+
+          if file.mode == 'directory' and entry ~= '..' and entry ~= '.' then
+            table.insert(directories, 1, file)
+          else
+            if max_files and #files == max_files then return files, false end
+            -- Workaround check for top-level (virtual) Windows drive
+            if not (WIN32 and #dir.path == 3 and entry == '..') then
+              files[#files + 1] = file
             end
           end
+
+          ::continue::
         end
       end
     end
@@ -351,22 +315,12 @@ local function toggle_flatten(list)
     data.depth = data.depth == 1 and DEFAULT_DEPTH or 1
   end
 
-  local filter = data.filter
-  if data.depth == 1 then -- remove updir filter
-    if type(filter.folders) == 'table' then
-      for i, restriction in ipairs(filter.folders) do
-        if restriction == updir_pattern then
-          table.remove(filter.folders, i)
-          break
-        end
-      end
-    end
-  else -- add updir filter
-    filter.folders = filter.folders or {}
-    filter.folders[#filter.folders + 1] = updir_pattern
-  end
-  filter = create_qopen_filter(filter)
   data.prev_depth = depth
+  if #data.filter == 0 then
+    data.filter = lfs.default_filter
+  else
+    data.filter = {}
+  end
   chdir(list, data.directory)
   list:set_current_search(search)
 end
@@ -515,11 +469,6 @@ Defaults to 10000 if not specified.
 ]]
 function M.select_file(on_selection, start_directory, filter, depth, max_files)
   start_directory = start_directory or get_initial_directory()
-  if not filter then filter = {}
-  elseif type(filter) == 'string' then filter = { filter } end
-
-  filter.folders = filter.folders or {}
-  filter.folders[#filter.folders + 1] = separator .. '%.$'
 
   -- Prevent opening another list from an already opened Textredux buffer.
   if buffer._textredux then return false end
@@ -549,11 +498,6 @@ end
 
 function M.select_directory(on_selection, start_directory, filter, depth, max_files)
   start_directory = start_directory or get_initial_directory()
-  if not filter then filter = {}
-  elseif type(filter) == 'string' then filter = { filter } end
-  filter[#filter + 1] = '.'
-
-  filter.folders = filter.folders or {}
 
   local list = create_list(start_directory, filter, depth or 1,
                            max_files or 10000)
@@ -617,7 +561,7 @@ function M.save_buffer_as()
     ui.statusbar_text = 'Saved buffer as: ' .. path
   end
 
-  local filter = { folders = { separator .. '%.$' } }
+  local filter = {}
   M.select_file(set_file_name, nil, filter, 1)
   ui.statusbar_text = 'Save buffer as: select file name to save as...'
       .. " (RIGHT to save as current user input)"
@@ -637,7 +581,7 @@ end
 --- Opens the specified directory for browsing.
 -- @param start_directory The directory to open, in UTF-8 encoding
 function M.open_file(start_directory)
-  local filter = { folders = { separator .. '%.$' } }
+  local filter = {}
   M.select_file(open_selected_file, start_directory, filter, 1, io.quick_open_max)
   ui.statusbar_text = '[/] = jump to filesystem root, [~] = jump to userhome, [ctrl+a] = open all currently displayed files'
 end
@@ -671,15 +615,7 @@ if not specified.
 function M.snapopen(directory, filter, exclude_FILTER, depth)
   if not directory then error('directory not specified', 2) end
   if not depth then depth = DEFAULT_DEPTH end
-  filter = filter or {}
-  if type(filter) == 'string' then filter = { filter } end
-  filter.folders = filter.folders or {}
-  filter.folders[#filter.folders + 1] = updir_pattern
-
-  if not exclude_FILTER then
-    filter = create_qopen_filter(filter)
-  end
-
+  local filter = lfs.default_filter
   M.select_file(open_selected_file, directory, filter, depth, io.quick_open_max)
 end
 
