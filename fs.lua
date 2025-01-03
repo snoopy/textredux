@@ -175,10 +175,12 @@ local function is_filtered(filepath, filter)
     pattern = pattern:gsub('!', '')
     pattern = pattern:gsub('%.', '%%.')
 
-    if pattern:find('/') then
+    if pattern:find('^/') and not pattern:find('/$') then
       pattern = pattern .. '/'
-      pattern = pattern:gsub('/', '[/\\]')
-    else
+    end
+    pattern = pattern:gsub('/', '[/\\]')
+
+    if not pattern:find('/') then
       pattern = pattern .. '$'
     end
 
