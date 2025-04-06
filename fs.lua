@@ -359,10 +359,22 @@ local function updir(list)
   end
 end
 
+local function activate(list)
+  local search = list:get_current_search()
+  if #list.buffer.data.matching_items > 0 then
+    list.buffer._on_user_select(list.buffer, list.buffer.current_pos)
+  elseif #search > 0 then
+    if list.on_new_selection then
+      list:on_new_selection(search)
+    end
+  end
+end
+
 local function create_list(directory, filter, depth, max_files)
   local list = reduxlist.new(directory)
   local data = list.data
   list.column_styles = {get_file_style}
+
   list.keys['f7'] = function()
     local foldername, button = ui.dialogs.input({
       title = 'New folder',
@@ -380,20 +392,25 @@ local function create_list(directory, filter, depth, max_files)
         chdir(list, list.data.directory)
     end
   end
+
   list.keys["alt+f"] = toggle_flatten
-  list.keys['/'] = function()
+
+  list.keys['alt+r'] = function()
     if WIN32 then
       display_windows_root(list)
     else
       chdir(list, '/')
     end
   end
-  list.keys['+'] = function()
+
+  list.keys['alt+u'] = function()
     if user_home then chdir(list, user_home) end
   end
-  list.keys['alt+up'] = function()
+
+  list.keys['left'] = function()
     updir(list)
   end
+
   list.keys['\b'] = function()
     local search = list:get_current_search()
     if not search then
@@ -402,17 +419,16 @@ local function create_list(directory, filter, depth, max_files)
       list:set_current_search(search:sub(1, -2))
     end
   end
+
   list.keys['\n'] = function()
-    local search = list:get_current_search()
-    if #list.buffer.data.matching_items > 0 then
-      list.buffer._on_user_select(list.buffer, list.buffer.current_pos)
-    elseif #search > 0 then
-      if list.on_new_selection then
-        list:on_new_selection(search)
-      end
-    end
+    activate(list)
   end
-  list.keys["right"] = function()
+
+  list.keys['right'] = function()
+    activate(list)
+  end
+
+  list.keys['ctrl+right'] = function()
     local search = list:get_current_search()
     if not search then return end
     local found = false
@@ -430,6 +446,7 @@ local function create_list(directory, filter, depth, max_files)
       list:on_new_selection(search)
     end
   end
+
   list.keys['ctrl+a'] = function()
     for _, item in ipairs(list.buffer.data.matching_items) do
       if not item[1]:match('%.%.') then
@@ -566,7 +583,7 @@ function M.save_buffer_as()
   local filter = {}
   M.select_file(set_file_name, nil, filter, 1)
   ui.statusbar_text = 'Save buffer as: select file name to save as...'
-      .. " (RIGHT to save as current user input)"
+      .. " (CTRL+RIGHT to force save as current user input)"
 end
 
 --- Saves the current buffer.
@@ -585,7 +602,7 @@ end
 function M.open_file(start_directory)
   local filter = {}
   M.select_file(open_selected_file, start_directory, filter, 1, io.quick_open_max)
-  ui.statusbar_text = '[/] = jump to filesystem root, [~] = jump to userhome, [ctrl+a] = open all currently displayed files'
+  ui.statusbar_text = '[alt+r] = jump to filesystem root, [alt+u] = jump to userhome, [ctrl+a] = open all currently displayed files'
 end
 
 
