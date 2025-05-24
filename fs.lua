@@ -166,65 +166,27 @@ local function file(path, name, parent)
   return file
 end
 
-local function is_filtered(filepath, filter)
-  if filepath:match('.+[/\\]' .. updir_pattern) then
-    return true
-  end
-  for _, filter_value in ipairs(filter) do
-    local pattern = filter_value
-    pattern = pattern:gsub('!', '')
-    pattern = pattern:gsub('%.', '%%.')
-
-    if pattern:find('^/') and not pattern:find('/$') then
-      pattern = pattern .. '/'
-    end
-    pattern = pattern:gsub('/', '[/\\]')
-
-    if not pattern:find('/') then
-      pattern = pattern .. '$'
-    end
-
-    if filepath:find(pattern) then
-      return true
-    end
-  end
-  return false
-end
-
 local function find_files(directory, filter, depth, max_files)
   if not directory then error('Missing argument #1 (directory)', 2) end
   if not depth then error('Missing argument #3 (depth)', 2) end
 
+  local FOLDERS = true
+  local FLATTEN = #filter ~= 0
   local files = {}
 
-  directory = normalize_path(directory)
-  local directories = { file(directory) }
-  while #directories > 0 do
-    local dir = table.remove(directories)
-    if dir.depth > 1 and #filter == 0 then files[#files + 1] = dir end
-    if dir.depth <= depth then
-      local status, entries, dir_obj = pcall(lfs.dir, dir.path)
-      if status then
-        for entry in entries, dir_obj do
-          local file = file(dir.path .. separator .. entry, entry, dir)
+  for filepath in lfs.walk(directory, FLATTEN and io.quick_open_filters or nil, depth == 1 and 0 or depth, FOLDERS) do
+    if #files >= max_files then
+      return files, false
+    end
 
-          if is_filtered(file.path, filter) then
-            goto continue
-          end
+    local parent_path = file(filepath:match('[/\\]([^/\\]+)[/\\][^/\\]+[/\\]?$') or '')
+    local filename = filepath:match('[/\\]([^/\\]+)[/\\]?$')
+    -- display full path if flatten is active
+    local file = file(filepath, FLATTEN and filepath or filename, parent_path)
 
-          if file.mode == 'directory' and entry ~= '..' and entry ~= '.' then
-            table.insert(directories, 1, file)
-          else
-            if max_files and #files == max_files then return files, false end
-            -- Workaround check for top-level (virtual) Windows drive
-            if not (WIN32 and #dir.path == 3 and entry == '..') then
-              files[#files + 1] = file
-            end
-          end
-
-          ::continue::
-        end
-      end
+    -- only add folders if flatten is not active
+    if not filepath:match('[/\\]$') or not FLATTEN then
+      table.insert(files, file)
     end
   end
   return files, true
@@ -318,11 +280,8 @@ local function toggle_flatten(list)
   end
 
   data.prev_depth = depth
-  if #data.filter == 0 then
-    data.filter = lfs.default_filter
-  else
-    data.filter = {}
-  end
+  -- only used as toggle for flatten
+  data.filter = #data.filter == 0 and {true} or {}
   chdir(list, data.directory)
   list:set_current_search(search)
 end
@@ -448,9 +407,10 @@ local function create_list(directory, filter, depth, max_files)
   end
 
   list.keys['ctrl+a'] = function()
+    local FLATTEN = #filter ~= 0
     for _, item in ipairs(list.buffer.data.matching_items) do
       if not item[1]:match('%.%.') then
-        io.open_file(list.data.directory .. separator .. item[1])
+        io.open_file(FLATTEN and item[1] or list.data.directory .. separator .. item[1])
       end
     end
     list:close()
