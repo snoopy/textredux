@@ -23,7 +23,7 @@ explicit matching. Defaults to `true`.
 function M.new(candidates, search_case_insensitive, search_fuzzy)
   local m = {
     search_case_insensitive = search_case_insensitive,
-    search_fuzzy = search_fuzzy
+    search_fuzzy = search_fuzzy,
   }
   setmetatable(m, { __index = M })
   m:_set_candidates(candidates)
@@ -111,7 +111,9 @@ function M:match(search)
   end
   cache.lines[search] = matching_lines
 
-  table.sort(matches, function(a ,b) return a.score < b.score end)
+  table.sort(matches, function(a, b)
+    return a.score < b.score
+  end)
   local matching_candidates = {}
   for _, match in ipairs(matches) do
     matching_candidates[#matching_candidates + 1] = self.candidates[match.index]
@@ -124,7 +126,7 @@ function M:_set_candidates(candidates)
   self.candidates = candidates
   self.cache = {
     lines = {},
-    matches = {}
+    matches = {},
   }
   local lines = {}
   local fuzzy_score_penalty = 0
@@ -135,7 +137,7 @@ function M:_set_candidates(candidates)
     if self.search_case_insensitive then text = text:lower() end
     lines[#lines + 1] = {
       text = text,
-      index = i
+      index = i,
     }
     fuzzy_score_penalty = math.max(fuzzy_score_penalty, #text)
   end
@@ -144,7 +146,9 @@ function M:_set_candidates(candidates)
 end
 
 local pattern_escapes = {}
-for c in string.gmatch('^$()%.[]*+-?', '.') do pattern_escapes[c] = '%' .. c end
+for c in string.gmatch('^$()%.[]*+-?', '.') do
+  pattern_escapes[c] = '%' .. c
+end
 
 local function fuzzy_search_pattern(search)
   local pattern = ''
@@ -164,7 +168,9 @@ function M:_matchers_for_search(search_string)
   local fuzzy = self.search_fuzzy
   local fuzzy_penalty = self.fuzzy_score_penalty
   local groups = {}
-  for part in search_string:gmatch('%S+') do groups[#groups + 1] = part end
+  for part in search_string:gmatch('%S+') do
+    groups[#groups + 1] = part
+  end
   local matchers = {}
 
   for _, search in ipairs(groups) do
@@ -174,13 +180,9 @@ function M:_matchers_for_search(search_string)
       local score = start_pos
       if not start_pos and fuzzy then
         start_pos, end_pos = line:find(fuzzy_pattern)
-        if start_pos then
-          score = (end_pos - start_pos) + fuzzy_penalty
-        end
+        if start_pos then score = (end_pos - start_pos) + fuzzy_penalty end
       end
-      if score then
-        return score + #line, start_pos, end_pos, search
-      end
+      if score then return score + #line, start_pos, end_pos, search end
     end
   end
   return matchers

@@ -56,8 +56,8 @@ module](./textredux.core.style.html) for instructions on how to define styles.
 @module textredux.fs
 ]]
 
-local reduxlist = require 'textredux.core.list'
-local reduxstyle = require 'textredux.core.style'
+local reduxlist = require('textredux.core.list')
+local reduxstyle = require('textredux.core.style')
 
 local string_match, string_sub = string.match, string.sub
 
@@ -94,7 +94,7 @@ local file_styles = {
   ['named pipe'] = reduxstyle.fs_pipe,
   ['char device'] = reduxstyle.fs_device,
   ['block device'] = reduxstyle.fs_device,
-  other = reduxstyle.default
+  other = reduxstyle.default,
 }
 
 local DEFAULT_DEPTH = 99
@@ -146,7 +146,7 @@ end
 -- with a trailing separator
 local function normalize_dir_path(directory)
   local path = normalize_path(directory)
-  return path:gsub("[\\/]?%.?[\\/]?$", separator)
+  return path:gsub('[\\/]?%.?[\\/]?$', separator)
 end
 
 local function file(path, name, parent)
@@ -175,9 +175,7 @@ local function find_files(directory, filter, depth, max_files)
   local files = {}
 
   for filepath in lfs.walk(directory, FLATTEN and io.quick_open_filters or nil, depth == 1 and 0 or depth, FOLDERS) do
-    if #files >= max_files then
-      return files, false
-    end
+    if #files >= max_files then return files, false end
 
     local parent_path = file(filepath:match('[/\\]([^/\\]+)[/\\][^/\\]+[/\\]?$') or '')
     local filename = filepath:match('[/\\]([^/\\]+)[/\\]?$')
@@ -185,29 +183,34 @@ local function find_files(directory, filter, depth, max_files)
     local file = file(filepath, FLATTEN and filepath or filename, parent_path)
 
     -- only add folders if flatten is not active
-    if not filepath:match('[/\\]$') or not FLATTEN then
-      table.insert(files, file)
-    end
+    if not filepath:match('[/\\]$') or not FLATTEN then table.insert(files, file) end
   end
   return files, true
 end
 
 local function sort_items(items)
-  table.sort(items, function (a, b)
+  table.sort(items, function(a, b)
     local self_path = '.' .. separator
     local parent_path = '..' .. separator
-    if a.rel_path == self_path then return true
-    elseif b.rel_path == self_path then return false
-    elseif a.rel_path == parent_path then return true
-    elseif b.rel_path == parent_path then return false
-    elseif a.hidden ~= b.hidden then return b.hidden
-    elseif b.mode == 'directory' and a.mode ~= 'directory' then return false
-    elseif a.mode == 'directory' and b.mode ~= 'directory' then return true
+    if a.rel_path == self_path then
+      return true
+    elseif b.rel_path == self_path then
+      return false
+    elseif a.rel_path == parent_path then
+      return true
+    elseif b.rel_path == parent_path then
+      return false
+    elseif a.hidden ~= b.hidden then
+      return b.hidden
+    elseif b.mode == 'directory' and a.mode ~= 'directory' then
+      return false
+    elseif a.mode == 'directory' and b.mode ~= 'directory' then
+      return true
     end
     -- Strip trailing separator from directories for correct sorting,
     -- e.g. `foo` before `foo-bar`
-    local trailing = separator.."$"
-    return a.rel_path:gsub(trailing, "") < b.rel_path:gsub(trailing, "")
+    local trailing = separator .. '$'
+    return a.rel_path:gsub(trailing, '') < b.rel_path:gsub(trailing, '')
   end)
 end
 
@@ -220,12 +223,9 @@ local function chdir(list, directory)
   list.items = items
   data.directory = directory
   list:show()
-  if #items > 1 and items[1].rel_path:match('^%.%..?$') then
-    list.buffer:line_down()
-  end
+  if #items > 1 and items[1].rel_path:match('^%.%..?$') then list.buffer:line_down() end
   if not complete then
-    local status = 'Number of entries limited to ' ..
-                   data.max_files .. ' as per io.quick_open_max'
+    local status = 'Number of entries limited to ' .. data.max_files .. ' as per io.quick_open_max'
     ui.statusbar_text = status
   else
     ui.statusbar_text = ''
@@ -234,14 +234,13 @@ end
 
 local function open_selected_file(path, exists, list)
   if not exists then
-    local button = ui.dialogs.message
-    {
+    local button = ui.dialogs.message({
       title = 'Create new file',
-      text = path .. "\ndoes not exist, do you want to create it?",
+      text = path .. '\ndoes not exist, do you want to create it?',
       icon = 'dialog-question',
       button1 = 'Create file',
       button2 = 'Cancel',
-    }
+    })
     if button == 2 then return end
 
     local file, error = io.open(path, 'wb')
@@ -268,7 +267,7 @@ end
 
 local function toggle_flatten(list)
   -- Don't toggle for list of Windows drives
-  if WIN32 and list.data.directory == "" then return end
+  if WIN32 and list.data.directory == '' then return end
   local data = list.data
   local depth = data.depth
   local search = list:get_current_search()
@@ -281,16 +280,16 @@ local function toggle_flatten(list)
 
   data.prev_depth = depth
   -- only used as toggle for flatten
-  data.filter = #data.filter == 0 and {true} or {}
+  data.filter = #data.filter == 0 and { true } or {}
   chdir(list, data.directory)
   list:set_current_search(search)
 end
 
 local function get_windows_drives()
-  local letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  local letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   local drives = {}
-  for i=1, #letters do
-    local drive = letters:sub(i, i)..":\\"
+  for i = 1, #letters do
+    local drive = letters:sub(i, i) .. ':\\'
     if fs_attributes(drive) then
       drives[#drives + 1] = file(drive, drive)
       drives[#drives][1] = drive
@@ -301,20 +300,20 @@ end
 
 local function display_windows_root(list)
   list.items = get_windows_drives()
-  list.data.directory = ""
+  list.data.directory = ''
   list.data.depth = 1
-  list.title = "Drives"
+  list.title = 'Drives'
   list:show()
 end
 
 local function updir(list)
   local parent = dirname(list.data.directory)
-    if WIN32 and #list.data.directory == 3 then
-      display_windows_root(list)
-      return true
-    elseif parent ~= list.data.directory then
-      chdir(list, parent)
-      return true
+  if WIN32 and #list.data.directory == 3 then
+    display_windows_root(list)
+    return true
+  elseif parent ~= list.data.directory then
+    chdir(list, parent)
+    return true
   end
 end
 
@@ -323,16 +322,14 @@ local function activate(list)
   if #list.buffer.data.matching_items > 0 then
     list.buffer._on_user_select(list.buffer, list.buffer.current_pos)
   elseif #search > 0 then
-    if list.on_new_selection then
-      list:on_new_selection(search)
-    end
+    if list.on_new_selection then list:on_new_selection(search) end
   end
 end
 
 local function create_list(directory, filter, depth, max_files)
   local list = reduxlist.new(directory)
   local data = list.data
-  list.column_styles = {get_file_style}
+  list.column_styles = { get_file_style }
 
   list.keys['f7'] = function()
     local foldername, button = ui.dialogs.input({
@@ -340,19 +337,17 @@ local function create_list(directory, filter, depth, max_files)
       button1 = 'OK',
       button2 = 'Cancel',
       return_button = true,
-      })
-      if button == 1 then
-        foldername = foldername:gsub('^.*[/\\]', '')
-        local path = list.data.directory .. '/' .. foldername
-        if WIN32 then
-          path = path:gsub('/', '\\')
-        end
-        os.spawn('mkdir ' .. path):wait()
-        chdir(list, list.data.directory)
+    })
+    if button == 1 then
+      foldername = foldername:gsub('^.*[/\\]', '')
+      local path = list.data.directory .. '/' .. foldername
+      if WIN32 then path = path:gsub('/', '\\') end
+      os.spawn('mkdir ' .. path):wait()
+      chdir(list, list.data.directory)
     end
   end
 
-  list.keys["alt+f"] = toggle_flatten
+  list.keys['alt+f'] = toggle_flatten
 
   list.keys['alt+r'] = function()
     if WIN32 then
@@ -451,19 +446,16 @@ function M.select_file(on_selection, start_directory, filter, depth, max_files)
 
   -- Prevent opening another list from an already opened Textredux buffer.
   if buffer._textredux then return false end
-  local list = create_list(start_directory, filter, depth or 1,
-                           max_files or 10000)
+  local list = create_list(start_directory, filter, depth or 1, max_files or 10000)
 
   list.on_selection = function(list, item)
     local path, mode = item.path, item.mode
-      if mode == 'link' then
-        mode = lfs.attributes(path, 'mode')
-      end
-      if mode == 'directory' then
-        chdir(list, path)
-      else
-        on_selection(path, true, list, shift, ctrl, alt, meta)
-      end
+    if mode == 'link' then mode = lfs.attributes(path, 'mode') end
+    if mode == 'directory' then
+      chdir(list, path)
+    else
+      on_selection(path, true, list, shift, ctrl, alt, meta)
+    end
   end
 
   list.on_new_selection = function(list, name, shift, ctrl, alt, meta)
@@ -478,37 +470,30 @@ end
 function M.select_directory(on_selection, start_directory, filter, depth, max_files)
   start_directory = start_directory or get_initial_directory()
 
-  local list = create_list(start_directory, filter, depth or 1,
-                           max_files or 10000)
+  local list = create_list(start_directory, filter, depth or 1, max_files or 10000)
 
   list.on_selection = function(list, item)
     local path, mode = item.path, item.mode
-      if mode == 'link' then
-        mode = lfs.attributes(path, 'mode')
-      end
-      if mode == 'directory' then
-        if path:match("[/\\]%.$") then
-          return
-        end
-        chdir(list, path)
-      end
+    if mode == 'link' then mode = lfs.attributes(path, 'mode') end
+    if mode == 'directory' then
+      if path:match('[/\\]%.$') then return end
+      chdir(list, path)
+    end
   end
 
   list.on_new_selection = function(list, name, shift, ctrl, alt, meta)
-    local path = list.data.directory .. separator .. name:gsub("[/\\]*", "")
+    local path = list.data.directory .. separator .. name:gsub('[/\\]*', '')
     on_selection(normalize_dir_path(path), false, list, shift, ctrl, alt, meta)
   end
 
-  list.keys["right"] = function()
+  list.keys['right'] = function()
     local selected_dir = list:get_current_selection()
-    if not selected_dir then
-      return
-    end
+    if not selected_dir then return end
 
     local path = selected_dir.path
-    if path:match("[/\\]%.$") then
+    if path:match('[/\\]%.$') then
       path = path:sub(1, -2)
-    elseif path:match("[/\\]%..$") then
+    elseif path:match('[/\\]%..$') then
       return
     end
 
@@ -525,14 +510,13 @@ function M.save_buffer_as()
     list:close()
 
     if exists then
-      local button = ui.dialogs.message
-      {
+      local button = ui.dialogs.message({
         title = 'Save buffer as',
-        text = path .. "\nexists already!\n\nDo you want to overwrite it?",
+        text = path .. '\nexists already!\n\nDo you want to overwrite it?',
         icon = 'dialog-question',
         button1 = 'Overwrite',
         button2 = 'Cancel',
-      }
+      })
       if button == 2 then return end
     end
 
@@ -543,7 +527,7 @@ function M.save_buffer_as()
   local filter = {}
   M.select_file(set_file_name, nil, filter, 1)
   ui.statusbar_text = 'Save buffer as: select file name to save as...'
-      .. " (CTRL+RIGHT to force save as current user input)"
+    .. ' (CTRL+RIGHT to force save as current user input)'
 end
 
 --- Saves the current buffer.
@@ -562,9 +546,9 @@ end
 function M.open_file(start_directory)
   local filter = {}
   M.select_file(open_selected_file, start_directory, filter, 1, io.quick_open_max)
-  ui.statusbar_text = '[alt+r] = jump to filesystem root, [alt+u] = jump to userhome, [ctrl+a] = open all currently displayed files'
+  ui.statusbar_text =
+    '[alt+r] = jump to filesystem root, [alt+u] = jump to userhome, [ctrl+a] = open all currently displayed files'
 end
-
 
 --[[-
 Opens a list of files in the specified directory, according to the given

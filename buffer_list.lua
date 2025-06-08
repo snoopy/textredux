@@ -25,7 +25,7 @@ in your `~/.textadept/init.lua`:
 @module textredux.buffer_list
 ]]
 
-local reduxlist = require 'textredux.core.list'
+local reduxlist = require('textredux.core.list')
 
 local M = {}
 
@@ -47,8 +47,12 @@ obtain the currently selected buffer - you can use the @{currently_selected_buff
 function for that.
 ]]
 M.keys = {
-  ["ctrl+d"] = function(list) M.close_buffer(list) end, -- Default for `close buffer`
-  [CURSES and 'meta+d' or 'ctrl+D'] = function(list) M.close_selected(list) end,
+  ['ctrl+d'] = function(list)
+    M.close_buffer(list)
+  end, -- Default for `close buffer`
+  [CURSES and 'meta+d' or 'ctrl+D'] = function(list)
+    M.close_selected(list)
+  end,
 }
 
 local buffer_source
@@ -77,7 +81,7 @@ local function get_buffer_items()
       items[#items + 1] = {
         buffer_title(buffer) .. modified,
         buffer_directory(buffer),
-        buffer = buffer
+        buffer = buffer,
       }
     end
   end
@@ -170,11 +174,13 @@ end
 -- @param buffers Either nil, in which case all buffers within _G.BUFFERS
 -- are displayed, or a function returning a table of buffers to display.
 function M.show(buffers)
-  buffer_source = buffers or function() return _BUFFERS end
+  buffer_source = buffers or function()
+    return _BUFFERS
+  end
 
   if not M.list then
     M.list = reduxlist.new('Buffer list')
-    M.list.headers = {'Name', 'Directory'}
+    M.list.headers = { 'Name', 'Directory' }
     M.list.on_selection = on_selection
     for k, v in pairs(M.keys) do
       M.list.keys[k] = v
@@ -195,9 +201,9 @@ function M.show(buffers)
     M.list.buffer:goto_line(line - 1)
   end
   local short_cut = CURSES and '[Meta+D]' or '[Ctrl+Shift+D]'
-  ui.statusbar_text = '[Enter] = open, [Ctrl+D] = close selected, '..
-    short_cut..' = close all buffers in current list'
+  ui.statusbar_text = '[Enter] = open, [Ctrl+D] = close selected, '
+    .. short_cut
+    .. ' = close all buffers in current list'
 end
-
 
 return M

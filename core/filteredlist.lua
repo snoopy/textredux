@@ -8,7 +8,7 @@ Filtered list wrapper, hijacking `ui.dialogs.list`.
 @module textredux.core.filteredlist
 ]]
 
-local list = require 'textredux.core.list'
+local list = require('textredux.core.list')
 
 local M = {}
 
@@ -28,15 +28,13 @@ local function convert_multi_column_table(nr_columns, items)
 end
 
 local function index_of(element, table)
-  for i, e  in ipairs(table) do
+  for i, e in ipairs(table) do
     if e == element then return i end
   end
 end
 
 ui.dialogs.list = function(options)
-  if not current_coroutine then
-    return ui_filteredlist(options)
-  end
+  if not current_coroutine then return ui_filteredlist(options) end
   local co = current_coroutine
   local title = options.title or ''
   local columns = options.columns
