@@ -77,7 +77,7 @@ local reduxindicator = require('textredux.core.indicator')
 local huge = math.huge
 
 -- Style for selectable and clickable items.
-reduxindicator.HOTSPOT = {style = view.INDIC_HIDDEN}
+reduxindicator.HOTSPOT = { style = view.INDIC_HIDDEN }
 
 local reduxbuffer = {}
 local ce_active = nil
@@ -178,19 +178,25 @@ function M.new(title)
     title = title,
     data = {},
     keys = {},
-    hotspots = {}
+    hotspots = {},
   }
   textreduxbuffers[buf] = true
-  buf.keys_mode = 'textredux '..tostring(buf)
+  buf.keys_mode = 'textredux ' .. tostring(buf)
   keys[buf.keys_mode] = {}
-  setmetatable(keys[buf.keys_mode], {__index = keys})
-  setmetatable(buf.keys, {__newindex = function(t, k, v)
-    -- Add to keys mode.
-    rawset(keys[buf.keys_mode], k, v)
-  end})
-  buf.keys.esc = function() buf:close() end
-  buf.keys['\n'] = function() buf:_on_user_select(buf.current_pos) end
-  return setmetatable(buf, {__index = __index, __newindex = __newindex})
+  setmetatable(keys[buf.keys_mode], { __index = keys })
+  setmetatable(buf.keys, {
+    __newindex = function(t, k, v)
+      -- Add to keys mode.
+      rawset(keys[buf.keys_mode], k, v)
+    end,
+  })
+  buf.keys.esc = function()
+    buf:close()
+  end
+  buf.keys['\n'] = function()
+    buf:_on_user_select(buf.current_pos)
+  end
+  return setmetatable(buf, { __index = __index, __newindex = __newindex })
 end
 
 -- Activate Textredux keys mode on buffer or view switch and file open.
@@ -214,12 +220,14 @@ events.connect(events.CHAR_ADDED, function(code)
   local _textredux = buffer._textredux
   if not _textredux then return end
   if _textredux.on_char_added then
-    local char = code < 256 and (not CURSES or (code ~= 7 and code ~= 13)) and
-        string.char(code) or keys.KEYSYMS[code]
+    -- stylua: ignore start
+    local char = code < 256
+      and (not CURSES or (code ~= 7 and code ~= 13))
+      and string.char(code)
+      or keys.KEYSYMS[code]
+    -- stylua: ignore end
 
-    if char ~= nil then
-      _textredux.on_char_added(char)
-    end
+    if char ~= nil then _textredux.on_char_added(char) end
   end
 end)
 
@@ -317,9 +325,7 @@ end
 --- Updates the title of the buffer.
 function reduxbuffer:set_title(title)
   self.title = title
-  if self:is_attached() then
-    self.target._type = title
-  end
+  if self:is_attached() then self.target._type = title end
 end
 
 ---
@@ -504,7 +510,9 @@ local function invoke_command(command, buffer)
     f = command[1]
     args = { table.unpack(command, 2) }
   end
-  xpcall(f, function(e) events.emit(events.ERROR, e) end, table.unpack(args))
+  xpcall(f, function(e)
+    events.emit(events.ERROR, e)
+  end, table.unpack(args))
 end
 
 -- Return to the buffer in which the Textredux buffer was opened.
@@ -549,9 +557,7 @@ end
 
 local function _on_buffer_after_switch()
   local reduxbuffer = buffer._textredux
-  if reduxbuffer then
-    reduxbuffer:refresh()
-  end
+  if reduxbuffer then reduxbuffer:refresh() end
 end
 
 -- We close all Textredux buffer upon quit - they won't restore properly anyway
@@ -578,13 +584,9 @@ local function _on_indicator_release(position)
     -- upon the return. This will change a position already set in the callback.
     if _VIEWS[cur_view] and cur_view.buffer ~= tr_buf.target then
       local focused_view = view
-      if cur_view ~= focused_view then
-        ui.goto_view(_VIEWS[cur_view], false)
-      end
+      if cur_view ~= focused_view then ui.goto_view(_VIEWS[cur_view], false) end
       buffer:goto_pos(position)
-      if view ~= focused_view then
-        ui.goto_view(_VIEWS[focused_view], false)
-      end
+      if view ~= focused_view then ui.goto_view(_VIEWS[focused_view], false) end
     end
     return true
   end

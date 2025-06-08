@@ -47,7 +47,7 @@ Please also see the file `examples/buffer_indicators.lua`.
 @module textredux.core.indicator
 ]]
 
-local color = require 'textredux.util.color'
+local color = require('textredux.util.color')
 
 local M = {}
 
@@ -81,12 +81,8 @@ local function activate_indicators()
       local number = properties.number
       if properties.style then buffer.indic_style[number] = properties.style end
       if properties.alpha then buffer.indic_alpha[number] = properties.alpha end
-      if properties.outline_alpha then
-        buffer.indic_outline_alpha[number] = properties.outline_alpha
-      end
-      if properties.fore then
-        buffer.indic_fore[number] = color.string_to_color(properties.fore)
-      end
+      if properties.outline_alpha then buffer.indic_outline_alpha[number] = properties.outline_alpha end
+      if properties.fore then buffer.indic_fore[number] = color.string_to_color(properties.fore) end
       if properties.under then buffer.indic_under[number] = properties.under end
     end
   end
@@ -97,6 +93,6 @@ events.connect(events.BUFFER_NEW, activate_indicators)
 events.connect(events.VIEW_NEW, activate_indicators)
 events.connect(events.VIEW_AFTER_SWITCH, activate_indicators)
 
-setmetatable(M, {__newindex=define_indicator})
+setmetatable(M, { __newindex = define_indicator })
 
 return M

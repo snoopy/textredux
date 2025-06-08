@@ -102,7 +102,7 @@ available are these:
 
 local M = {}
 
-local color = require 'textredux.util.color'
+local color = require('textredux.util.color')
 local string_to_color = color.string_to_color
 local color_to_string = color.color_to_string
 
@@ -124,14 +124,18 @@ end
 -- Copy a table.
 local function table_copy(table)
   local new = {}
-  for k, v in pairs(table) do new[k] = v end
+  for k, v in pairs(table) do
+    new[k] = v
+  end
   return new
 end
 
 -- Overwrite fields in first style table with fields from second style table.
 local function style_merge(s1, s2)
   local new = table_copy(s1)
-  for k, v in pairs(s2) do new[k] = v end
+  for k, v in pairs(s2) do
+    new[k] = v
+  end
   new.number = nil
   return new
 end
@@ -188,15 +192,15 @@ local default_styles = {
   bracebad = 36,
   controlchar = 37,
   indentguide = 38,
-  calltip = 39
+  calltip = 39,
 }
 
 -- Set default styles by parsing buffer properties.
 for k, v in pairs(default_styles) do
-  M[k] = {number = v, apply = apply}
-  local style = buffer.property['style.'..k]:gsub('[$%%]%b()', function(key)
-      return buffer.property[key:sub(3, -2)]
-    end)
+  M[k] = { number = v, apply = apply }
+  local style = buffer.property['style.' .. k]:gsub('[$%%]%b()', function(key)
+    return buffer.property[key:sub(3, -2)]
+  end)
   local fore = style:match('fore:(%d+)')
   if fore then M[k]['fore'] = color_to_string(tonumber(fore)) end
   local back = style:match('back:(%d+)')
@@ -210,7 +214,7 @@ for k, v in pairs(default_styles) do
   if style:match('bold') then M[k]['bold'] = true end
   if style:match('underlined') then M[k]['underlined'] = true end
   if style:match('eolfilled') then M[k]['eolfilled'] = true end
-  setmetatable(M[k], {__concat=style_merge})
+  setmetatable(M[k], { __concat = style_merge })
 end
 
 -- Defines a new style using the given table of style properties.
@@ -223,13 +227,13 @@ local function define_style(t, name, properties)
     if type(v) == 'table' then count = count + 1 end
   end
   local number = STYLE_LASTPREDEFINED + count - #default_styles + 1
-  if (number > STYLE_MAX) then error('Maximum style number exceeded') end
+  if number > STYLE_MAX then error('Maximum style number exceeded') end
   properties.number = number
   properties.apply = apply
   rawset(t, name, properties)
 end
 
-setmetatable(M, {__newindex=define_style})
+setmetatable(M, { __newindex = define_style })
 
 -- Ensure Textredux styles are defined after switching buffers or views.
 events.connect(events.BUFFER_AFTER_SWITCH, M.activate_styles)

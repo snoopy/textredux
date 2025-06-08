@@ -46,11 +46,11 @@ features, and the documentation for each component provides more details.
 ]]
 
 local M = {
-  buffer = require 'textredux.core.buffer',
-  filteredlist = require 'textredux.core.filteredlist',
-  style = require 'textredux.core.style',
-  list = require 'textredux.core.list',
-  indicator = require 'textredux.core.indicator',
+  buffer = require('textredux.core.buffer'),
+  filteredlist = require('textredux.core.filteredlist'),
+  style = require('textredux.core.style'),
+  list = require('textredux.core.list'),
+  indicator = require('textredux.core.indicator'),
 }
 
 return M

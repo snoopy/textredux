@@ -53,10 +53,10 @@ Please see the modules documentation for more configuration settings.
 ]]
 
 local M = {
-  core = require 'textredux.core',
-  buffer_list = require 'textredux.buffer_list',
-  ctags = require 'textredux.ctags',
-  fs = require 'textredux.fs'
+  core = require('textredux.core'),
+  buffer_list = require('textredux.buffer_list'),
+  ctags = require('textredux.ctags'),
+  fs = require('textredux.fs'),
 }
 
 -- Set new key bindings.
@@ -67,9 +67,7 @@ local function patch_keys(replacements)
   end
   for k, command_id in pairs(_keys) do
     local replacement = replacements[command_id]
-    if replacement ~= nil then
-      keys[k] = replacement
-    end
+    if replacement ~= nil then keys[k] = replacement end
   end
 end
 
@@ -90,12 +88,8 @@ function M.hijack()
   local io_quick_open = io.quick_open
   local function snapopen_compat(utf8_paths, filter, exclude_FILTER, ...)
     if not utf8_paths then utf8_paths = io.get_project_root() end
-    if not utf8_paths and buffer.filename then
-      utf8_paths = buffer.filename:match('^(.+)[/\\]')
-    end
-    if not utf8_paths or
-       (type(utf8_paths) == 'table' and #utf8_paths ~= 1)
-    then
+    if not utf8_paths and buffer.filename then utf8_paths = buffer.filename:match('^(.+)[/\\]') end
+    if not utf8_paths or (type(utf8_paths) == 'table' and #utf8_paths ~= 1) then
       return io_quick_open(utf8_paths, filter, exclude_FILTER, ...)
     end
     local directory = type(utf8_paths) == 'table' and utf8_paths[1] or utf8_paths
@@ -117,7 +111,7 @@ function M.hijack()
     select_lexer,
     io.open_recent_file,
     select_command,
-    goto_mark
+    goto_mark,
   }
 
   for _, target in ipairs(fl_funcs) do

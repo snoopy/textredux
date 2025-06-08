@@ -39,9 +39,9 @@ local util_matcher = require('textredux.util.matcher')
 
 local string_rep = string.rep
 
-reduxstyle.list_header = {underlined = true}
+reduxstyle.list_header = { underlined = true }
 
-reduxstyle.list_match_highlight = reduxstyle['function']..{underlined = true}
+reduxstyle.list_match_highlight = reduxstyle['function'] .. { underlined = true }
 
 --- The default style to use for diplaying headers.
 -- This is by default the `style.list_header` style. It's possible to override
@@ -60,7 +60,7 @@ list.match_highlight_style = reduxstyle.list_match_highlight
 -- explicit styles. In the latter case, the function will be invoked with the
 -- corresponding item and column index. The default styles contains styles for
 -- up to three columns, after which the default style will be used.
-list.column_styles = {reduxstyle.nothing, reduxstyle.nothing, reduxstyle.nothing}
+list.column_styles = { reduxstyle.nothing, reduxstyle.nothing, reduxstyle.nothing }
 
 --- Whether searches are case insensitive or not.
 -- It's possible to override this for a specific list by assigning another
@@ -135,9 +135,9 @@ function M.new(title, items, on_selection)
   local l = {
     title = title,
     items = items or {},
-    on_selection = on_selection
+    on_selection = on_selection,
   }
-  setmetatable(l, {__index = list})
+  setmetatable(l, { __index = list })
 
   l:_create_buffer()
   return l
@@ -147,12 +147,8 @@ end
 function list:show()
   self:_calculate_column_widths()
   self.buffer.data = {
-    matcher = util_matcher.new(
-                self.items,
-                self.search_case_insensitive,
-                self.search_fuzzy
-              ),
-   list = self
+    matcher = util_matcher.new(self.items, self.search_case_insensitive, self.search_fuzzy),
+    list = self,
   }
   self.buffer:show()
 end
@@ -163,8 +159,7 @@ function list:get_current_selection()
   if buffer:is_showing() then
     local data = buffer.data
     local current_line = buffer:line_from_position(buffer.current_pos)
-    if current_line >= data.items_start_line
-      and current_line <= data.items_end_line then
+    if current_line >= data.items_start_line and current_line <= data.items_end_line then
       return data.matching_items[current_line - data.items_start_line + 1]
     end
   end
@@ -199,7 +194,7 @@ function list:_calculate_column_widths()
     column_widths[i] = #tostring(header)
   end
   for _, item in ipairs(self.items) do
-    if type(item) ~= 'table' then item = {item} end
+    if type(item) ~= 'table' then item = { item } end
     for j, field in ipairs(item) do
       column_widths[j] = math.max(column_widths[j] or 0, #tostring(field))
     end
@@ -225,10 +220,7 @@ end
 function highlight_matches(explanations, line_start, match_style)
   for _, explanation in ipairs(explanations) do
     for _, range in ipairs(explanation) do
-      match_style:apply(
-        line_start + range.start_pos - 1,
-        range.length
-      )
+      match_style:apply(line_start + range.start_pos - 1, range.length)
     end
   end
 end
@@ -247,8 +239,7 @@ function list:_add_items(items, start_index, end_index)
     local line_start = buffer.current_pos
     for j, field in ipairs(columns) do
       local pad_to = j == nr_columns and 0 or column_widths[j]
-      add_column_text(buffer, tostring(field),
-                      pad_to, self:_column_style(columns, j))
+      add_column_text(buffer, tostring(field), pad_to, self:_column_style(columns, j))
     end
 
     if self.match_highlight_style then
@@ -258,7 +249,7 @@ function list:_add_items(items, start_index, end_index)
 
     buffer:add_text('\n')
     if self.on_selection then
-      local handler = function (shift, ctrl, alt, meta)
+      local handler = function(shift, ctrl, alt, meta)
         self.on_selection(self, item, shift, ctrl, alt, meta)
       end
       buffer:add_hotspot(line_start, buffer.current_pos, handler)
@@ -268,10 +259,7 @@ function list:_add_items(items, start_index, end_index)
   data.items_end_line = buffer:line_from_position(buffer.current_pos) - 1
 
   if #items > end_index then
-    local message = string.format(
-      "[..] (%d more items not shown, press <down> here to see more)",
-      #items - end_index
-    )
+    local message = string.format('[..] (%d more items not shown, press <down> here to see more)', #items - end_index)
     buffer:add_text(message, reduxstyle.comment)
   end
 end
@@ -289,7 +277,7 @@ function list:_refresh()
   buffer:add_text(#self.items, reduxstyle.number)
   buffer:add_text(' items')
   if data.search and #data.search > 0 then
-    buffer:add_text( ' matching ')
+    buffer:add_text(' matching ')
     buffer:add_text(data.search, reduxstyle.comment)
   end
   buffer:add_text('\n\n')
@@ -335,7 +323,9 @@ end
 -- Create Textredux buffer to display the list.
 function list:_create_buffer()
   local listbuffer = reduxbuffer.new(self.title)
-  listbuffer.on_refresh = function(...) self:_refresh(...) end
+  listbuffer.on_refresh = function(...)
+    self:_refresh(...)
+  end
 
   self.buffer = listbuffer
   self.data = self.buffer.data
@@ -346,7 +336,7 @@ function list:_create_buffer()
 
   self.buffer.on_char_added = function(char)
     local search = self.get_current_search(self) or ''
-    self.set_current_search(self, search..char)
+    self.set_current_search(self, search .. char)
   end
 
   listbuffer.keys['\b'] = function()
@@ -356,9 +346,7 @@ function list:_create_buffer()
 
   local search_delete_word = function()
     local search = self:get_current_search()
-    if search then
-      self:set_current_search(search:gsub('%s*$', ''):match('^(.*%s)%S*$'))
-    end
+    if search then self:set_current_search(search:gsub('%s*$', ''):match('^(.*%s)%S*$')) end
   end
   listbuffer.keys['ctrl+\b'] = search_delete_word
   listbuffer.keys['alt+\b'] = search_delete_word
@@ -366,7 +354,9 @@ function list:_create_buffer()
 
   local key_wrapper = function(t, k, v)
     if type(v) == 'function' then
-      listbuffer.keys[k] = function() v(self) end
+      listbuffer.keys[k] = function()
+        v(self)
+      end
     else
       listbuffer.keys[k] = v
     end
@@ -374,7 +364,7 @@ function list:_create_buffer()
 
   self.keys = setmetatable({}, {
     __index = listbuffer.keys,
-    __newindex = key_wrapper
+    __newindex = key_wrapper,
   })
   return listbuffer
 end
@@ -390,8 +380,7 @@ events.connect(events.UPDATE_UI, function(updated)
     local line = buffer:line_from_position(buffer.current_pos)
     local start_line = reduxbuffer.data.items_start_line
     local end_line = reduxbuffer.data.items_end_line
-    if reduxbuffer.data.shown_items < #reduxbuffer.data.matching_items and
-       line > end_line then
+    if reduxbuffer.data.shown_items < #reduxbuffer.data.matching_items and line > end_line then
       reduxbuffer.data.list:_load_more_items()
       buffer:goto_line(reduxbuffer.data.items_end_line)
     elseif line > end_line then
