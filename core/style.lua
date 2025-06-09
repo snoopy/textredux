@@ -221,16 +221,16 @@ end
 -- @param name The style name that should be used for the style
 -- @param properties The table describing the style
 local function define_style(t, name, properties)
-  local properties = table_copy(properties)
+  local new_properties = table_copy(properties)
   local count = 0
   for _, v in pairs(M) do
     if type(v) == 'table' then count = count + 1 end
   end
   local number = STYLE_LASTPREDEFINED + count - #default_styles + 1
   if number > STYLE_MAX then error('Maximum style number exceeded') end
-  properties.number = number
-  properties.apply = apply
-  rawset(t, name, properties)
+  new_properties.number = number
+  new_properties.apply = apply
+  rawset(t, name, new_properties)
 end
 
 setmetatable(M, { __newindex = define_style })

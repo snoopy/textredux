@@ -44,14 +44,14 @@ ui.dialogs.list = function(options)
     if #columns > 1 then items = convert_multi_column_table(#columns, items) end
   end
 
-  local l = list.new(title, items)
-  if columns then l.headers = columns end
-  l.on_selection = function(l, item)
+  local new_list = list.new(title, items)
+  if columns then new_list.headers = columns end
+  new_list.on_selection = function(list_arg, item)
     local value = index_of(item, items)
-    l:close()
+    list_arg:close()
     coroutine.resume(co, value)
   end
-  l:show()
+  new_list:show()
   return coroutine.yield()
 end
 

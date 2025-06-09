@@ -217,7 +217,7 @@ local function add_column_text(buffer, text, pad_to, style)
 end
 
 -- Highlight matches.
-function highlight_matches(explanations, line_start, match_style)
+local function highlight_matches(explanations, line_start, match_style)
   for _, explanation in ipairs(explanations) do
     for _, range in ipairs(explanation) do
       match_style:apply(line_start + range.start_pos - 1, range.length)
@@ -352,7 +352,7 @@ function list:_create_buffer()
   listbuffer.keys['alt+\b'] = search_delete_word
   listbuffer.keys['cmd+\b'] = search_delete_word
 
-  local key_wrapper = function(t, k, v)
+  local key_wrapper = function(_t, k, v)
     if type(v) == 'function' then
       listbuffer.keys[k] = function()
         v(self)
@@ -373,16 +373,16 @@ end
 events.connect(events.UPDATE_UI, function(updated)
   if not updated then return end
   local buffer = buffer
-  local reduxbuffer = buffer._textredux
-  if not reduxbuffer then return end
-  if not reduxbuffer.data.list then return end
+  local redux_buffer = buffer._textredux
+  if not redux_buffer then return end
+  if not redux_buffer.data.list then return end
   if buffer.UPDATE_SELECTION & updated == buffer.UPDATE_SELECTION then
     local line = buffer:line_from_position(buffer.current_pos)
-    local start_line = reduxbuffer.data.items_start_line
-    local end_line = reduxbuffer.data.items_end_line
-    if reduxbuffer.data.shown_items < #reduxbuffer.data.matching_items and line > end_line then
-      reduxbuffer.data.list:_load_more_items()
-      buffer:goto_line(reduxbuffer.data.items_end_line)
+    local start_line = redux_buffer.data.items_start_line
+    local end_line = redux_buffer.data.items_end_line
+    if redux_buffer.data.shown_items < #redux_buffer.data.matching_items and line > end_line then
+      redux_buffer.data.list:_load_more_items()
+      buffer:goto_line(redux_buffer.data.items_end_line)
     elseif line > end_line then
       buffer:goto_line(end_line)
     elseif line < start_line then

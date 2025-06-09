@@ -59,12 +59,11 @@ module](./textredux.core.style.html) for instructions on how to define styles.
 local reduxlist = require('textredux.core.list')
 local reduxstyle = require('textredux.core.style')
 
-local string_match, string_sub = string.match, string.sub
+local string_sub = string.sub
 
 local user_home = os.getenv('HOME') or os.getenv('UserProfile')
 local fs_attributes = WIN32 and lfs.attributes or lfs.symlinkattributes
 local separator = WIN32 and '\\' or '/'
-local updir_pattern = '%.%.?$'
 
 local M = {}
 
@@ -150,20 +149,20 @@ local function normalize_dir_path(directory)
 end
 
 local function file(path, name, parent)
-  local file, error = fs_attributes(path)
-  if error then file = { mode = 'error' } end
-  local suffix = file.mode == 'directory' and separator or ''
-  file.path = path
-  file.hidden = name and string_sub(name, 1, 1) == '.'
+  local file_info, error = fs_attributes(path)
+  if error then file_info = { mode = 'error' } end
+  local suffix = file_info.mode == 'directory' and separator or ''
+  file_info.path = path
+  file_info.hidden = name and string_sub(name, 1, 1) == '.'
   if parent then
-    file.rel_path = parent.rel_path .. name .. suffix
-    file.depth = parent.depth + 1
+    file_info.rel_path = parent.rel_path .. name .. suffix
+    file_info.depth = parent.depth + 1
   else
-    file.rel_path = ''
-    file.depth = 1
+    file_info.rel_path = ''
+    file_info.depth = 1
   end
-  file[1] = file.rel_path
-  return file
+  file_info[1] = file_info.rel_path
+  return file_info
 end
 
 local function find_files(directory, filter, depth, max_files)
@@ -180,10 +179,10 @@ local function find_files(directory, filter, depth, max_files)
     local parent_path = file(filepath:match('[/\\]([^/\\]+)[/\\][^/\\]+[/\\]?$') or '')
     local filename = filepath:match('[/\\]([^/\\]+)[/\\]?$')
     -- display full path if flatten is active
-    local file = file(filepath, FLATTEN and filepath or filename, parent_path)
+    local file_obj = file(filepath, FLATTEN and filepath or filename, parent_path)
 
     -- only add folders if flatten is not active
-    if not filepath:match('[/\\]$') or not FLATTEN then table.insert(files, file) end
+    if not filepath:match('[/\\]$') or not FLATTEN then table.insert(files, file_obj) end
   end
   return files, true
 end
@@ -243,12 +242,12 @@ local function open_selected_file(path, exists, list)
     })
     if button == 2 then return end
 
-    local file, error = io.open(path, 'wb')
-    if not file then
+    local file_handle, error = io.open(path, 'wb')
+    if not file_handle then
       ui.statusbar_text = 'Could not create ' .. path .. ': ' .. error
       return
     end
-    file:close()
+    file_handle:close()
   end
 
   list:close()
@@ -261,7 +260,7 @@ local function get_initial_directory()
   return user_home
 end
 
-local function get_file_style(item, index)
+local function get_file_style(item, _index)
   return file_styles[item.mode] or reduxstyle.default
 end
 
@@ -448,20 +447,20 @@ function M.select_file(on_selection, start_directory, filter, depth, max_files)
   if buffer._textredux then return false end
   local list = create_list(start_directory, filter, depth or 1, max_files or 10000)
 
-  list.on_selection = function(list, item)
+  list.on_selection = function(list_arg, item)
     local path, mode = item.path, item.mode
     if mode == 'link' then mode = lfs.attributes(path, 'mode') end
     if mode == 'directory' then
-      chdir(list, path)
+      chdir(list_arg, path)
     else
-      on_selection(path, true, list, shift, ctrl, alt, meta)
+      on_selection(path, true, list_arg, shift, ctrl, alt, meta)
     end
   end
 
-  list.on_new_selection = function(list, name, shift, ctrl, alt, meta)
-    local path = split_path(list.data.directory)
+  list.on_new_selection = function(list_arg, name, shift, ctrl, alt, meta)
+    local path = split_path(list_arg.data.directory)
     path[#path + 1] = name
-    on_selection(join_path(path), false, list, shift, ctrl, alt, meta)
+    on_selection(join_path(path), false, list_arg, shift, ctrl, alt, meta)
   end
 
   chdir(list, start_directory)
@@ -472,18 +471,18 @@ function M.select_directory(on_selection, start_directory, filter, depth, max_fi
 
   local list = create_list(start_directory, filter, depth or 1, max_files or 10000)
 
-  list.on_selection = function(list, item)
+  list.on_selection = function(list_arg, item)
     local path, mode = item.path, item.mode
     if mode == 'link' then mode = lfs.attributes(path, 'mode') end
     if mode == 'directory' then
       if path:match('[/\\]%.$') then return end
-      chdir(list, path)
+      chdir(list_arg, path)
     end
   end
 
-  list.on_new_selection = function(list, name, shift, ctrl, alt, meta)
-    local path = list.data.directory .. separator .. name:gsub('[/\\]*', '')
-    on_selection(normalize_dir_path(path), false, list, shift, ctrl, alt, meta)
+  list.on_new_selection = function(list_arg, name, shift, ctrl, alt, meta)
+    local path = list_arg.data.directory .. separator .. name:gsub('[/\\]*', '')
+    on_selection(normalize_dir_path(path), false, list_arg, shift, ctrl, alt, meta)
   end
 
   list.keys['right'] = function()
@@ -575,11 +574,10 @@ to snapopen.FILTER if not specified.
 @param depth The number of directory levels to scan. Defaults to DEFAULT_DEPTH
 if not specified.
 ]]
-function M.snapopen(directory, filter, exclude_FILTER, depth)
+function M.snapopen(directory, _filter, _exclude_FILTER, depth)
   if not directory then error('directory not specified', 2) end
   if not depth then depth = DEFAULT_DEPTH end
-  local filter = lfs.default_filter
-  M.select_file(open_selected_file, directory, filter, depth, io.quick_open_max)
+  M.select_file(open_selected_file, directory, lfs.default_filter, depth, io.quick_open_max)
 end
 
 return M
