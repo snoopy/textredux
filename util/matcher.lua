@@ -56,13 +56,13 @@ following fields:
   `end_pos`: The end position of the best match
   `1..n`: Tables of matching positions with the field start_pos and length
 ]]
-function M:explain(search, text)
-  if not search or #search == 0 then return {} end
+function M:explain(search_arg, text)
+  if not search_arg or #search_arg == 0 then return {} end
   if self.search_case_insensitive then
-    search = search:lower()
+    search_arg = search_arg:lower()
     text = text:lower()
   end
-  local matchers = self:_matchers_for_search(search)
+  local matchers = self:_matchers_for_search(search_arg)
   local explanations = {}
 
   for _, matcher in ipairs(matchers) do

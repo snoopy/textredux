@@ -185,7 +185,7 @@ function M.new(title)
   keys[buf.keys_mode] = {}
   setmetatable(keys[buf.keys_mode], { __index = keys })
   setmetatable(buf.keys, {
-    __newindex = function(t, k, v)
+    __newindex = function(_t, k, v)
       -- Add to keys mode.
       rawset(keys[buf.keys_mode], k, v)
     end,
@@ -556,8 +556,8 @@ local function _on_buffer_deleted()
 end
 
 local function _on_buffer_after_switch()
-  local reduxbuffer = buffer._textredux
-  if reduxbuffer then reduxbuffer:refresh() end
+  local redux_buffer = buffer._textredux
+  if redux_buffer then redux_buffer:refresh() end
 end
 
 -- We close all Textredux buffer upon quit - they won't restore properly anyway
