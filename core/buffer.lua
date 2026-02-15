@@ -221,6 +221,8 @@ events.connect(events.CHAR_ADDED, function(code)
   local _textredux = buffer._textredux
   if not _textredux then return end
   if _textredux.on_char_added then
+    -- code < 256: ASCII range; 7 = BEL (bell), 13 = CR (carriage return)
+    -- These are filtered out in CURSES mode as they cause display issues
     -- stylua: ignore start
     local char = code < 256
       and (not CURSES or (code ~= 7 and code ~= 13))
