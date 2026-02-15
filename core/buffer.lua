@@ -274,6 +274,7 @@ function reduxbuffer:close()
     set_keys_mode()
   else
     if not self:is_active() then view:goto_buffer(_BUFFERS[self.target]) end
+    self.target.margin_width_n[1] = self.origin_margin_1 or 0
     self.target:close()
     if self.origin_buffer then self:_restore_origin_buffer() end
   end
@@ -494,8 +495,8 @@ function reduxbuffer:_create_target()
   target:set_lexer('text')
   target.eol_mode = buffer.EOL_LF
   target.wrap_mode = target.WRAP_NONE
-  -- target.margin_width_n[2] = not CURSES and target.margin_width_n[1] + 4 or 1
-  -- target.margin_width_n[1] = 0
+  self.origin_margin_1 = target.margin_width_n[1]
+  target.margin_width_n[1] = 0
   target:set_save_point()
   target.undo_collection = false
   self.target = target
