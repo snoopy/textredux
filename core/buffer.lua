@@ -481,7 +481,7 @@ function reduxbuffer:insert_text(pos, text, style, command, indicator)
   local saved_buf = buffer
   _G.buffer = self.target
   if not style then style = reduxstyle.default end
-  style:apply(insert_pos, #text)
+  style:apply(pos, #text)
   if command then self:add_hotspot(pos, pos + #text, command) end
   if indicator then indicator:apply(pos, #text) end
   _G.buffer = saved_buf
