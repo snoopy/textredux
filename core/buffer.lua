@@ -275,6 +275,7 @@ function reduxbuffer:close()
   else
     if not self:is_active() then view:goto_buffer(_BUFFERS[self.target]) end
     self.target:close()
+    if self.origin_buffer then self:_restore_origin_buffer() end
   end
 end
 
@@ -520,7 +521,7 @@ function reduxbuffer:_restore_origin_buffer()
   local origin_buffer = self.origin_buffer
   if origin_buffer then
     local buf_index = _BUFFERS[origin_buffer]
-    if buf_index and originbuffer ~= buffer then
+    if buf_index and origin_buffer ~= buffer then
       view:goto_buffer(buf_index, false)
       keys.mode = self.origin_key_mode
     end
