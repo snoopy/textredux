@@ -161,7 +161,8 @@ end
 
 -- Set values in the built-in target buffer or the Textredux buffer instance.
 local function __newindex(t, k, v)
-  if rawget(t, target) and rawget(t, target, k) then
+  local target = rawget(t, 'target')
+  if target and rawget(t.target, k) then
     rawset(t.target, k, v)
   else
     rawset(t, k, v)
