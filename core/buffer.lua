@@ -510,7 +510,7 @@ end
 -- Invoke command.
 local function invoke_command(command, buffer)
   local f = command
-  local args = { buffer, shift, ctl, alt, meta }
+  local args = { buffer, shift, ctrl, alt, meta }
   if type(command) == 'table' then
     f = command[1]
     args = { table.unpack(command, 2) }
