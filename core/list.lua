@@ -336,13 +336,13 @@ function list:_create_buffer()
   end
 
   self.buffer.on_char_added = function(char)
-    local search = self.get_current_search(self) or ''
-    self.set_current_search(self, search .. char)
+    local search = self:get_current_search() or ''
+    self:set_current_search(search .. char)
   end
 
   listbuffer.keys['\b'] = function()
-    local search = self.get_current_search(self)
-    if search then self.set_current_search(self, search:sub(1, #search - 1)) end
+    local search = self:get_current_search()
+    if search then self:set_current_search(search:sub(1, #search - 1)) end
   end
 
   local search_delete_word = function()
