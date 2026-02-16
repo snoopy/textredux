@@ -332,17 +332,34 @@ local function create_list(directory, filter, depth, max_files)
 
   list.keys['f7'] = function()
     local foldername, button = ui.dialogs.input({
-      title = 'New folder',
+      title = 'Create New folder',
       button1 = 'OK',
       button2 = 'Cancel',
       return_button = true,
     })
     if button == 1 then
       foldername = foldername:gsub('^.*[/\\]', '')
-      local path = list.data.directory .. '/' .. foldername
-      if WIN32 then path = path:gsub('/', '\\') end
-      os.spawn('mkdir ' .. path):wait()
-      chdir(list, list.data.directory)
+      if #foldername == 0 then
+        ui.dialogs.message({
+          title = 'Error',
+          text = 'Folder name cannot be empty',
+          icon = 'dialog-error',
+          button1 = 'OK',
+        })
+        return
+      end
+      local path = list.data.directory .. separator .. foldername
+      local ok, err = lfs.mkdir(path)
+      if not ok then
+        ui.dialogs.message({
+          title = 'Error',
+          text = 'Could not create folder:\n' .. path .. '\n\n' .. (err or 'unknown error'),
+          icon = 'dialog-error',
+          button1 = 'OK',
+        })
+      else
+        chdir(list, list.data.directory)
+      end
     end
   end
 
