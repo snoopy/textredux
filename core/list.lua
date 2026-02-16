@@ -231,6 +231,7 @@ function list:_add_items(items, start_index, end_index)
   local data = self.buffer.data
   local search = data.search
   local column_widths = self._column_widths
+  local nr_columns = #column_widths
 
   for index = start_index, end_index do
     local item = items[index]
