@@ -350,8 +350,8 @@ end
 -- @return true if the buffer is showing and false otherwise
 function reduxbuffer:is_showing()
   if not self.target then return false end
-  for _, view in ipairs(_VIEWS) do
-    if view.buffer == self.target then return true end
+  for _, local_view in ipairs(_VIEWS) do
+    if local_view.buffer == self.target then return true end
   end
   return false
 end
@@ -574,12 +574,12 @@ end
 -- and it's annoying to have empty non-functioning buffers upon start.
 local function _on_quit()
   local buffers_to_close = {}
-  for _, buffer in ipairs(_BUFFERS) do
-    if buffer._textredux then buffers_to_close[#buffers_to_close + 1] = buffer end
+  for _, local_buffer in ipairs(_BUFFERS) do
+    if local_buffer._textredux then buffers_to_close[#buffers_to_close + 1] = local_buffer end
   end
-  for _, buffer in ipairs(buffers_to_close) do
-    view:goto_buffer(_BUFFERS[buffer])
-    buffer:close()
+  for _, local_buffer in ipairs(buffers_to_close) do
+    view:goto_buffer(_BUFFERS[local_buffer])
+    local_buffer:close()
   end
 end
 
