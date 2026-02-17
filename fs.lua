@@ -165,24 +165,22 @@ local function file(path, name, parent)
   return file_info
 end
 
-local function find_files(directory, filter, depth, max_files)
+local function find_files(directory, flatten, depth, max_files)
   if not directory then error('Missing argument #1 (directory)', 2) end
   if not depth then error('Missing argument #3 (depth)', 2) end
 
-  local FOLDERS = true
-  local FLATTEN = #filter ~= 0
   local files = {}
-
-  for filepath in lfs.walk(directory, FLATTEN and io.quick_open_filters or nil, depth == 1 and 0 or depth, FOLDERS) do
+  local FOLDERS = true
+  for filepath in lfs.walk(directory, flatten and io.quick_open_filters or nil, depth == 1 and 0 or depth, FOLDERS) do
     if #files >= max_files then return files, false end
 
     local parent_path = file(filepath:match('[/\\]([^/\\]+)[/\\][^/\\]+[/\\]?$') or '')
     local filename = filepath:match('[/\\]([^/\\]+)[/\\]?$')
     -- display full path if flatten is active
-    local file_obj = file(filepath, FLATTEN and filepath or filename, parent_path)
+    local file_obj = file(filepath, flatten and filepath or filename, parent_path)
 
     -- only add folders if flatten is not active
-    if not filepath:match('[/\\]$') or not FLATTEN then table.insert(files, file_obj) end
+    if not filepath:match('[/\\]$') or not flatten then table.insert(files, file_obj) end
   end
   return files, true
 end
@@ -216,7 +214,7 @@ end
 local function chdir(list, directory)
   directory = normalize_path(directory)
   local data = list.data
-  local items, complete = find_files(directory, data.filter, data.depth, data.max_files)
+  local items, complete = find_files(directory, data.flatten, data.depth, data.max_files)
   if data.depth == 1 then sort_items(items) end
   list.title = directory:gsub(user_home, '~')
   list.items = items
@@ -278,8 +276,7 @@ local function toggle_flatten(list)
   end
 
   data.prev_depth = depth
-  -- only used as toggle for flatten
-  data.filter = #data.filter == 0 and { true } or {}
+  data.flatten = not data.flatten
   chdir(list, data.directory)
   list:set_current_search(search)
 end
@@ -325,7 +322,7 @@ local function activate(list)
   end
 end
 
-local function create_list(directory, filter, depth, max_files)
+local function create_list(directory, flatten, depth, max_files)
   local list = reduxlist.new(directory)
   local data = list.data
   list.column_styles = { get_file_style }
@@ -418,10 +415,9 @@ local function create_list(directory, filter, depth, max_files)
   end
 
   list.keys['ctrl+a'] = function()
-    local FLATTEN = #filter ~= 0
     for _, item in ipairs(list.buffer.data.matching_items) do
       if not item[1]:match('%.%.') then
-        io.open_file(FLATTEN and item[1] or list.data.directory .. separator .. item[1])
+        io.open_file(flatten and item[1] or list.data.directory .. separator .. item[1])
       end
     end
     list:close()
@@ -429,7 +425,7 @@ local function create_list(directory, filter, depth, max_files)
   end
 
   data.directory = directory
-  data.filter = filter
+  data.flatten = flatten
   data.depth = depth
   data.max_files = max_files
   return list
@@ -449,7 +445,7 @@ The list will not be closed automatically, so close it explicitly using
 @param start_directory The initial directory to open, in UTF-8 encoding. If
 nil, the initial directory is determined automatically (preferred choice is to
 open the directory containing the current file).
-@param filter The filter to apply, if any. The structure and semantics are the
+@param flatten The flatten to apply, if any. The structure and semantics are the
 same as for Textadept's
 [snapopen](http://foicica.com/textadept/api/io.html#snapopen).
 @param depth The number of directory levels to display in the list. Defaults to
@@ -457,12 +453,12 @@ same as for Textadept's
 @param max_files The maximum number of files to scan and display in the list.
 Defaults to 10000 if not specified.
 ]]
-function M.select_file(on_selection, start_directory, filter, depth, max_files)
+function M.select_file(on_selection, start_directory, flatten, depth, max_files)
   start_directory = start_directory or get_initial_directory()
 
   -- Prevent opening another list from an already opened Textredux buffer.
   if buffer._textredux then return false end
-  local list = create_list(start_directory, filter, depth or 1, max_files or 10000)
+  local list = create_list(start_directory, flatten, depth or 1, max_files or 10000)
 
   list.on_selection = function(list_arg, item)
     local path, mode = item.path, item.mode
@@ -483,10 +479,10 @@ function M.select_file(on_selection, start_directory, filter, depth, max_files)
   chdir(list, start_directory)
 end
 
-function M.select_directory(on_selection, start_directory, filter, depth, max_files)
+function M.select_directory(on_selection, start_directory, flatten, depth, max_files)
   start_directory = start_directory or get_initial_directory()
 
-  local list = create_list(start_directory, filter, depth or 1, max_files or 10000)
+  local list = create_list(start_directory, flatten, depth or 1, max_files or 10000)
 
   list.on_selection = function(list_arg, item)
     local path, mode = item.path, item.mode
@@ -540,8 +536,8 @@ function M.save_buffer_as()
     ui.statusbar_text = 'Saved buffer as: ' .. path
   end
 
-  local filter = {}
-  M.select_file(set_file_name, nil, filter, 1)
+  local flatten = false
+  M.select_file(set_file_name, nil, flatten, 1)
   ui.statusbar_text = 'Save buffer as: select file name to save as...'
     .. ' (CTRL+RIGHT to force save as current user input)'
 end
@@ -560,8 +556,8 @@ end
 --- Opens the specified directory for browsing.
 -- @param start_directory The directory to open, in UTF-8 encoding
 function M.open_file(start_directory)
-  local filter = {}
-  M.select_file(open_selected_file, start_directory, filter, 1, io.quick_open_max)
+  local flatten = false
+  M.select_file(open_selected_file, start_directory, flatten, 1, io.quick_open_max)
   ui.statusbar_text =
     '[alt+r] = jump to filesystem root, [alt+u] = jump to userhome, [ctrl+a] = open all currently displayed files'
 end
@@ -573,7 +569,7 @@ parameters. This works similarily to
 The main differences are:
 
 - it does not support opening multiple paths at once
-- filter can contain functions as well as patterns (and can be a function as well).
+- flatten can contain functions as well as patterns (and can be a function as well).
   Functions will be passed a file object which is the same as the return from
   [lfs.attributes](http://keplerproject.github.com/luafilesystem/manual.html#attributes),
   with the following additions:
@@ -583,10 +579,10 @@ The main differences are:
     - `hidden`: Whether the path denotes a hidden file.
 
 @param directory The directory to open, in UTF-8 encoding.
-@param filter The filter to apply. The format and semantics are the same as for
+@param flatten The flatten to apply. The format and semantics are the same as for
 Textadept.
 @param exclude_FILTER Same as for Textadept: unless if not true then
-snapopen.FILTER will be automatically added to the filter.
+snapopen.FILTER will be automatically added to the flatten.
 to snapopen.FILTER if not specified.
 @param depth The number of directory levels to scan. Defaults to DEFAULT_DEPTH
 if not specified.
