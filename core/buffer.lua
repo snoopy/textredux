@@ -143,6 +143,10 @@ reduxbuffer.target = nil
 -- Stored to be able to go back to after closing the Textredux buffer.
 reduxbuffer.origin_buffer = nil
 
+--- The saved state of the origin buffer.
+-- Stores buffer properties for restoration when returning from a Textredux buffer.
+reduxbuffer.origin_buffer_state = nil
+
 ---
 -- @section end
 
@@ -245,13 +249,11 @@ yet or having been deleted, it is automatically created. Upon the return, the
 buffer is showing and set as the global buffer.
 ]]
 function reduxbuffer:show()
-  local origin_buffer = buffer
+  self.origin_buffer = buffer
+  self.origin_key_mode = keys.mode
+  self:_save_origin_buffer_state()
   if not self:is_attached() then self:_create_target() end
   if not self:is_showing() then view:goto_buffer(_BUFFERS[self.target]) end
-  if origin_buffer ~= buffer then
-    self.origin_buffer = origin_buffer
-    self.origin_key_mode = keys.mode
-  end
   self:refresh()
   keys.mode = self.keys_mode
 end
@@ -282,7 +284,6 @@ function reduxbuffer:close()
     set_keys_mode()
   else
     if not self:is_active() then view:goto_buffer(_BUFFERS[self.target]) end
-    self.target.margin_width_n[1] = self.origin_margin_1 or 0
     self.target:close()
     if self.origin_buffer then self:_restore_origin_buffer() end
   end
@@ -503,7 +504,6 @@ function reduxbuffer:_create_target()
   target:set_lexer('text')
   target.eol_mode = buffer.EOL_LF
   target.wrap_mode = target.WRAP_NONE
-  self.origin_margin_1 = target.margin_width_n[1]
   target.margin_width_n[1] = 0
   target:set_save_point()
   target.undo_collection = false
@@ -525,6 +525,49 @@ local function invoke_command(command, buffer)
   end, table.unpack(args))
 end
 
+function reduxbuffer:_save_origin_buffer_state()
+  if not self.origin_buffer or not _BUFFERS[self.origin_buffer] then return end
+  local state = {}
+  state.wrap_mode = self.origin_buffer.wrap_mode
+  state.margin_width_n = {
+    self.origin_buffer.margin_width_n[1],
+  }
+  state.fold_expanded = {}
+  for line = 1, self.origin_buffer.line_count do
+    if (self.origin_buffer.fold_level[line] & buffer.FOLDLEVELHEADERFLAG) ~= 0 then
+      state.fold_expanded[line] = self.origin_buffer.fold_expanded[line]
+    end
+  end
+
+  self.origin_buffer_state = state
+end
+
+function reduxbuffer:_restore_origin_buffer_state()
+  if not self.origin_buffer or not _BUFFERS[self.origin_buffer] then
+    -- Origin buffer is gone; nothing to restore.
+    self.origin_buffer_state = nil
+    return
+  end
+  local state = self.origin_buffer_state
+  if not state then return end
+
+  self.origin_buffer.wrap_mode = state.wrap_mode
+
+  if state.margin_width_n then self.origin_buffer.margin_width_n[1] = state.margin_width_n[1] end
+
+  for line, expanded in pairs(state.fold_expanded) do
+    if line <= self.origin_buffer.line_count then
+      if expanded and not self.origin_buffer.fold_expanded[line] then
+        self.origin_buffer:toggle_fold(line)
+      elseif not expanded and self.origin_buffer.fold_expanded[line] then
+        self.origin_buffer:toggle_fold(line)
+      end
+    end
+  end
+
+  self.origin_buffer_state = nil
+end
+
 -- Return to the buffer in which the Textredux buffer was opened.
 function reduxbuffer:_restore_origin_buffer()
   local origin_buffer = self.origin_buffer
@@ -535,6 +578,7 @@ function reduxbuffer:_restore_origin_buffer()
       keys.mode = self.origin_key_mode
     end
   end
+  self:_restore_origin_buffer_state()
 end
 
 -- Event hooks.
@@ -563,6 +607,13 @@ local function _on_buffer_deleted()
       break
     end
   end
+end
+
+local function _on_buffer_before_switch()
+  local redux = view.buffer._textredux
+  if not redux then return end
+  local state = redux.origin_buffer_state
+  if state and state.margin_width_n then view.buffer.margin_width_n[1] = state.margin_width_n[1] end
 end
 
 local function _on_buffer_after_switch()
@@ -605,6 +656,7 @@ local function _on_indicator_release(position)
 end
 
 events.connect(events.BUFFER_DELETED, _on_buffer_deleted)
+events.connect(events.BUFFER_BEFORE_SWITCH, _on_buffer_before_switch)
 events.connect(events.BUFFER_AFTER_SWITCH, _on_buffer_after_switch)
 events.connect(events.INDICATOR_RELEASE, _on_indicator_release)
 events.connect(events.QUIT, _on_quit, 1)
