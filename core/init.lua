@@ -4,7 +4,7 @@
 
 --[[--
 The Textredux core module allows you to easily create text based interfaces
-for the [Textadept](http://foicica.com/textadept/) editor.
+for the [Textadept](https://orbitalquark.github.io/textadept/) editor.
 
 It currently consists of the following components:
 
@@ -33,7 +33,7 @@ either do
     local textredux = require('textredux')
     local reduxlist = textredux.core.list
 
-or you can just the modules that you want by something
+or you can just require the modules that you want by something
 similar to
 
     local reduxstyle = require('textredux.core.style')

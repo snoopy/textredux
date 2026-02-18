@@ -73,7 +73,7 @@ reduxstyle.fs_directory = reduxstyle.operator
 --- The style used for ordinary file entries.
 reduxstyle.fs_file = reduxstyle.string
 
----  The style used for link entries.
+--- The style used for link entries.
 reduxstyle.fs_link = reduxstyle.operator
 
 --- The style used for socket entries.
@@ -82,7 +82,7 @@ reduxstyle.fs_socket = reduxstyle.error
 --- The style used for pipe entries.
 reduxstyle.fs_pipe = reduxstyle.error
 
---- The style used for pipe entries.
+--- The style used for device entries.
 reduxstyle.fs_device = reduxstyle.error
 
 local file_styles = {
@@ -165,6 +165,14 @@ local function file(path, name, parent)
   return file_info
 end
 
+--[[ Recursively walks a directory and returns a list of file objects.
+@param directory The directory path to search (required)
+@param flatten If true, uses quick_open_filters and shows full recursive paths (optional)
+@param depth The maximum recursion depth (1 = current dir only, required)
+@param max_files Maximum number of files to return (optional)
+@return files A table of file objects with path, name, rel_path, depth, mode, hidden
+@return complete True if all files found, false if max_files limit reached
+--]]
 local function find_files(directory, flatten, depth, max_files)
   if not directory then error('Missing argument #1 (directory)', 2) end
   if not depth then error('Missing argument #3 (depth)', 2) end
@@ -434,10 +442,10 @@ local function create_list(directory, flatten, depth, max_files)
 end
 
 --[[- Opens a file browser and lets the user choose a file.
-@param on_selection The function to invoke when the user has choosen a file.
+@param on_selection The function to invoke when the user has chosen a file.
 The function will be called with following parameters:
 
-- `path`: The full path of the choosen file (UTF-8 encoded).
+- `path`: The full path of the chosen file (UTF-8 encoded).
 - `exists`: A boolean indicating whether the file exists or not.
 - `list`: A reference to the Textredux list used by browser.
 
@@ -447,9 +455,7 @@ The list will not be closed automatically, so close it explicitly using
 @param start_directory The initial directory to open, in UTF-8 encoding. If
 nil, the initial directory is determined automatically (preferred choice is to
 open the directory containing the current file).
-@param flatten The flatten to apply, if any. The structure and semantics are the
-same as for Textadept's
-[snapopen](http://foicica.com/textadept/api/io.html#snapopen).
+@param flatten The flatten to apply, if any. (Currently accepted but not used.)
 @param depth The number of directory levels to display in the list. Defaults to
 1 if not specified, which results in a "normal" directory listing.
 @param max_files The maximum number of files to scan and display in the list.
@@ -565,27 +571,18 @@ function M.open_file(start_directory)
 end
 
 --[[-
-Opens a list of files in the specified directory, according to the given
-parameters. This works similarily to
-[Textadept snapopen](http://foicica.com/textadept/api/io.html#snapopen).
+Opens a file selection dialog in the specified directory, according to the given
+parameters. This works similarly to
+[Textadept snapopen](https://orbitalquark.github.io/textadept/api/io.html#snapopen).
 The main differences are:
 
 - it does not support opening multiple paths at once
-- flatten can contain functions as well as patterns (and can be a function as well).
-  Functions will be passed a file object which is the same as the return from
-  [lfs.attributes](http://keplerproject.github.com/luafilesystem/manual.html#attributes),
-  with the following additions:
-
-    - `rel_path`: The path of the file relative to the currently
-      displayed directory.
-    - `hidden`: Whether the path denotes a hidden file.
+- it uses lfs.default_filter internally for filtering.
 
 @param directory The directory to open, in UTF-8 encoding.
-@param flatten The flatten to apply. The format and semantics are the same as for
-Textadept.
-@param exclude_FILTER Same as for Textadept: unless if not true then
-snapopen.FILTER will be automatically added to the flatten.
-to snapopen.FILTER if not specified.
+@param _filter The filter to apply. (Currently accepted but not used.)
+@param _exclude_FILTER Unless true, snapopen.FILTER will be automatically added
+to the filter. (Currently accepted but not used.)
 @param depth The number of directory levels to scan. Defaults to DEFAULT_DEPTH
 if not specified.
 ]]

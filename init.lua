@@ -4,7 +4,7 @@
 
 --[[--
 The Textredux module allows you to easily create text based interfaces for the
-[Textadept](http://foicica.com/textadept/) editor and offers a set of text
+[Textadept](https://orbitalquark.github.io/textadept/) editor and offers a set of text
 based interfaces.
 
 It currently contains the following modules:
@@ -41,7 +41,7 @@ then the @{hijack} function is for you. Simply place this in your
 
     require('textredux').hijack()
 
-As the name suggest, Textredux has now hijacked your environment. All your
+As the name suggests, Textredux has now hijacked your environment. All your
 regular key bindings should now use Textredux where applicable. Clicking the
 menu will still open the standard GUI dialogs.
 

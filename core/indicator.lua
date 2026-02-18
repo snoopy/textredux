@@ -12,7 +12,7 @@ user clicks the marked text.
 
 An indicator is defined using a simple table with the properties listed below.
 For the most part, these properties maps directly to fields in the
-[buffer](http://foicica.com/textadept/api/buffer.html) API.
+[buffer](https://orbitalquark.github.io/textadept/api/buffer.html) API.
 
 - `style`: The style of the indicator. See `indic_style`.
 - `alpha`: Alpha transparency value from 0 to 255 (or 256 for no alpha), used

@@ -3,7 +3,7 @@
 -- License: MIT (see LICENSE)
 
 --[[
-Example on how to use custom styling with a TextUI buffer. This example shows
+Example on how to use custom styling with a Textredux buffer. This example shows
 how to define custom styles and use them when inserting content.
 ]]
 

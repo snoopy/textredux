@@ -34,7 +34,7 @@ M.list = nil
 
 --[[-- The key bindings for the buffer list.
 
-You can modifiy this to customise the key bindings to your liking. The key
+You can modify this to customise the key bindings to your liking. The key
 bindings are passed directly to the Textredux list, so note that the
 first argument to any function will be the Textredux list itself.
 You can read more about the Textredux list's keys in the

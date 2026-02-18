@@ -43,13 +43,13 @@ reduxstyle.list_header = { underlined = true }
 
 reduxstyle.list_match_highlight = reduxstyle['function'] .. { underlined = true }
 
---- The default style to use for diplaying headers.
+--- The default style to use for displaying headers.
 -- This is by default the `style.list_header` style. It's possible to override
 -- this for a specific list by assigning another value to the instance itself.
 list.header_style = reduxstyle.list_header
 
 --- The style to use for indicating matches.
--- You can turn off highlighing of matches by setting this to nil.
+-- You can turn off highlighting of matches by setting this to nil.
 -- It's possible to override this for a specific list by assigning another
 -- value to the instance itself. The default value is `style.default`.
 list.match_highlight_style = reduxstyle.list_match_highlight

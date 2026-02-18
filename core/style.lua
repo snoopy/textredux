@@ -11,7 +11,7 @@ Textredux styling provides an abstraction layer over the lexer based style
 creation. A style is thus just a table with certain properties, almost exactly
 the same as for style created for a lexer or theme. Please see the documentation
 for
-[lexer.style](http://foicica.com/textadept/api/lexer.html#Styles.and.Styling)
+[lexer.style](https://orbitalquark.github.io/textadept/api/lexer.html#Styles.and.Styling)
 for information about the available fields. Colors should be defined in the
 standard `'#rrggbb'` notation.
 
@@ -69,7 +69,7 @@ great with your own dark theme, but may be pretty near invisible for some user
 with a light blue background.
 
 You can read more about the default lexer styles in the
-[Textadept lexer documentation](http://foicica.com/textadept/api/lexer.html).
+[Textadept lexer documentation](https://orbitalquark.github.io/textadept/api/lexer.html).
 You access a default style (or any style for that matter), by indexing the
 style module, like so: `style.<name>`. For reference, the default styles
 available are these:

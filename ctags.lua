@@ -41,7 +41,7 @@ Note that it is possible to add support for additional filetypes in your
     --regex-latex=/\\subsubsection\*\{([^}]*)\}/\1/u,subsubsection/
 
 This module is based on Mitchell's ctags code posted on the
-[Textadept wiki](http://foicica.com/wiki/ctags).
+[Textadept wiki](https://orbitalquark.github.io/textadept/wiki/ctags).
 
 @module textredux.ctags
 ]]

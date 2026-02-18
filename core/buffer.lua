@@ -37,7 +37,7 @@ you can check for the `_textredux` field.
 ## How it works
 
 When you work with a Textredux buffer, it will nearly always seem just like an
-ordinary [Textadept buffer](http://foicica.com/textadept/api/buffer.html)
+ordinary [Textadept buffer](https://orbitalquark.github.io/textadept/api/buffer.html)
 (but with benefits, such as support for custom styling and easy callbacks,
 etc.). But where a Textadept buffer is volatile, and might cease to exists at
 any time (for example being closed by a user) a Textredux buffer is
@@ -122,7 +122,7 @@ reduxbuffer.on_char_added = nil
 --[[-- A table of key commands for the buffer.
 This is simply a `textadept.keys` mode, which is set whenever the Textredux
 buffer is active. The format for specifying keys is the same as for
-[textadept.keys](http://foicica.com/textadept/api/keys.html), thus the values
+[textadept.keys](https://orbitalquark.github.io/textadept/api/keys.html), thus the values
 assigned can be either functions or tables.
 ]]
 reduxbuffer.keys = nil
@@ -395,7 +395,7 @@ function reduxbuffer:add_hotspot(start_pos, end_pos, command)
   end
   local length = end_pos - start_pos
   -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on.  This is so that when attached to the command
+  -- buffer we're working on. This is so that when attached to the command
   -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
   -- functions, which assume they're working on the current buffer, still
   -- work.
@@ -408,7 +408,7 @@ end
 -- Add styling and hotspot support to buffer text insertion functions.
 
 --[[-- Override for
-[buffer:add_text](http://foicica.com/textadept/api/buffer.html#add_text)
+[buffer:add_text](https://orbitalquark.github.io/textadept/api/buffer.html#add_text)
 which accepts optional style, command and indicator parameters.
 @param text The text to add.
 @param style The style to use for the text, as defined using
@@ -422,7 +422,7 @@ function reduxbuffer:add_text(text, style, command, indicator)
   text = tostring(text)
   local insert_pos = self.target.current_pos
   -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on.  This is so that when attached to the command
+  -- buffer we're working on. This is so that when attached to the command
   -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
   -- functions, which assume they're working on the current buffer, still
   -- work.
@@ -437,7 +437,7 @@ function reduxbuffer:add_text(text, style, command, indicator)
 end
 
 --[[-- Override for
-[buffer:append_text](http://foicica.com/textadept/api/buffer.html#append_text)
+[buffer:append_text](https://orbitalquark.github.io/textadept/api/buffer.html#append_text)
 which accepts optional style, command and indicator parameters.
 @param text The text to append.
 @param style The style to use for the text, as defined using
@@ -452,7 +452,7 @@ function reduxbuffer:append_text(text, style, command, indicator)
   text = tostring(text)
   self.target:append_text(text)
   -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on.  This is so that when attached to the command
+  -- buffer we're working on. This is so that when attached to the command
   -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
   -- functions, which assume they're working on the current buffer, still
   -- work.
@@ -466,7 +466,7 @@ function reduxbuffer:append_text(text, style, command, indicator)
 end
 
 --[[-- Override for
-[buffer:insert_text](http://foicica.com/textadept/api/buffer.html#insert_text)
+[buffer:insert_text](https://orbitalquark.github.io/textadept/api/buffer.html#insert_text)
 which accepts optional style, command and indicator parameters.
 @param pos The position to insert text at or `-1` for the current position.
 @param text The text to insert.
@@ -481,7 +481,7 @@ function reduxbuffer:insert_text(pos, text, style, command, indicator)
   text = tostring(text)
   self.target:insert_text(pos, text)
   -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on.  This is so that when attached to the command
+  -- buffer we're working on. This is so that when attached to the command
   -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
   -- functions, which assume they're working on the current buffer, still
   -- work.
