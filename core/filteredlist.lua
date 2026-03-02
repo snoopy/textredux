@@ -49,7 +49,12 @@ ui.dialogs.list = function(options)
   new_list.on_selection = function(list_arg, item)
     local value = index_of(item, items)
     list_arg:close()
-    coroutine.resume(co, value)
+    if options.multiple then value = { value } end
+    if options.return_button then
+      coroutine.resume(co, value, 1)
+    else
+      coroutine.resume(co, value)
+    end
   end
   new_list:show()
   return coroutine.yield()
