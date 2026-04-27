@@ -207,8 +207,8 @@ for k, v in pairs(default_styles) do
   if back then M[k]['back'] = color_to_string(tonumber(back)) end
   local font = style:match('font:([%a ]+)')
   if font then M[k]['font'] = font end
-  local fontsize = style:match('fontsize:([%a ]+)')
-  if fontsize then M[k]['fontsize'] = fontsize end
+  local fontsize = style:match('size:(%d+)')
+  if fontsize then M[k]['size'] = tonumber(fontsize) end
   -- Assuming "notbold" etc. are never used in default styles.
   if style:match('italics') then M[k]['italics'] = true end
   if style:match('bold') then M[k]['bold'] = true end
