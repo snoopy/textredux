@@ -213,7 +213,7 @@ end
 local function add_column_text(buffer, text, pad_to, style)
   buffer:add_text(text, style)
   local padding = (pad_to + 1) - #text
-  if padding then buffer:add_text(string_rep(' ', padding)) end
+  if padding > 0 then buffer:add_text(string_rep(' ', padding)) end
 end
 
 -- Highlight matches.
@@ -235,7 +235,7 @@ function list:_add_items(items, start_index, end_index)
 
   for index = start_index, end_index do
     local item = items[index]
-    if item == nil or index > end_index then break end
+    if item == nil then break end
     local columns = type(item) == 'table' and item or { item }
     local line_start = buffer.current_pos
     for j, field in ipairs(columns) do
@@ -250,7 +250,7 @@ function list:_add_items(items, start_index, end_index)
 
     buffer:add_text('\n')
     if self.on_selection then
-      local handler = function(shift, ctrl, alt, meta)
+      local handler = function(_buf, shift, ctrl, alt, meta)
         self.on_selection(self, item, shift, ctrl, alt, meta)
       end
       buffer:add_hotspot(line_start, buffer.current_pos, handler)
@@ -290,7 +290,7 @@ function list:_refresh()
   -- Headers.
   local headers = self.headers
   if headers then
-    for i, header in ipairs(self.headers or {}) do
+    for i, header in ipairs(headers) do
       local pad_to = i == nr_columns and 0 or column_widths[i]
       add_column_text(buffer, header, pad_to, self.header_style)
     end
@@ -347,7 +347,7 @@ function list:_create_buffer()
 
   local search_delete_word = function()
     local search = self:get_current_search()
-    if search then self:set_current_search(search:gsub('%s*$', ''):match('^(.*%s)%S*$')) end
+    if search then self:set_current_search(search:gsub('%s*$', ''):match('^(.*%s)%S*$') or '') end
   end
   listbuffer.keys['ctrl+\b'] = search_delete_word
   listbuffer.keys['alt+\b'] = search_delete_word

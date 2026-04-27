@@ -194,6 +194,7 @@ local function find_files(directory, flatten, depth, max_files)
 end
 
 local function sort_items(items)
+  local trailing_sep = separator .. '$'
   table.sort(items, function(a, b)
     local self_path = '.' .. separator
     local parent_path = '..' .. separator
@@ -214,8 +215,7 @@ local function sort_items(items)
     end
     -- Strip trailing separator from directories for correct sorting,
     -- e.g. `foo` before `foo-bar`
-    local trailing = separator .. '$'
-    return a.rel_path:gsub(trailing, '') < b.rel_path:gsub(trailing, '')
+    return a.rel_path:gsub(trailing_sep, '') < b.rel_path:gsub(trailing_sep, '')
   end)
 end
 
@@ -325,7 +325,7 @@ local function activate(list)
   local search = list:get_current_search()
   if #list.buffer.data.matching_items > 0 then
     list.buffer._on_user_select(list.buffer, list.buffer.current_pos)
-  elseif #search > 0 then
+  elseif search and #search > 0 then
     if list.on_new_selection then list:on_new_selection(search) end
   end
 end
@@ -418,7 +418,7 @@ local function create_list(directory, flatten, depth, max_files)
     if found then
       list.buffer._on_user_select(list.buffer, list.buffer.current_pos)
     else
-      list:on_new_selection(search)
+      if list.on_new_selection then list:on_new_selection(search) end
     end
   end
 
@@ -468,7 +468,7 @@ function M.select_file(on_selection, start_directory, flatten, depth, max_files)
   if buffer._textredux then return false end
   local list = create_list(start_directory, flatten, depth or 1, max_files or 10000)
 
-  list.on_selection = function(list_arg, item)
+  list.on_selection = function(list_arg, item, shift, ctrl, alt, meta)
     local path, mode = item.path, item.mode
     if mode == 'link' then mode = lfs.attributes(path, 'mode') end
     if mode == 'directory' then
@@ -586,7 +586,7 @@ to the filter. (Currently accepted but not used.)
 @param depth The number of directory levels to scan. Defaults to DEFAULT_DEPTH
 if not specified.
 ]]
-function M.snapopen(directory, _filter, _exclude_FILTER, depth)
+function M.snapopen(directory, _filter, _exclude_filter, depth)
   if not directory then error('directory not specified', 2) end
   if not depth then depth = DEFAULT_DEPTH end
   M.select_file(open_selected_file, directory, lfs.default_filter, depth, io.quick_open_max)

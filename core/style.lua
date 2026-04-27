@@ -226,7 +226,7 @@ local function define_style(t, name, properties)
   for _, v in pairs(M) do
     if type(v) == 'table' then count = count + 1 end
   end
-  local number = STYLE_LASTPREDEFINED + count - #default_styles + 1
+  local number = STYLE_LASTPREDEFINED + count + 1
   if number > STYLE_MAX then error('Maximum style number exceeded') end
   new_properties.number = number
   new_properties.apply = apply

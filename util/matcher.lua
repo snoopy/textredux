@@ -69,7 +69,7 @@ function M:explain(search_arg, text)
     local score, start_pos, end_pos, search = matcher(text)
     if not score then return {} end
     local explanation = { score = score, start_pos = start_pos, end_pos = end_pos }
-    local _, s_index = 1, 1
+    local s_index = 1
     local l_start, l_index = start_pos, start_pos
     while s_index <= #search do
       repeat

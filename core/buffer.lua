@@ -85,7 +85,7 @@ local huge = math.huge
 reduxindicator.HOTSPOT = { style = view.INDIC_HIDDEN }
 
 local reduxbuffer = {}
-local ce_active = nil
+local command_entry_active = nil
 
 --- Instance fields. These can be set for a buffer instance, and not
 -- globally for the module.
@@ -184,6 +184,7 @@ end
 -- @param title The title of the buffer. This will be displayed as the buffer's
 -- title in Textadept's top bar.
 function M.new(title)
+  if not title then error('no title specified', 2) end
   local buf = {
     title = title,
     data = {},
@@ -212,8 +213,8 @@ end
 -- Activate Textredux keys mode on buffer or view switch and file open.
 -- Otherwise activate Textadept's  default keys  mode.
 local function set_keys_mode()
-  if ce_active then
-    keys.mode = ce_active.keys_mode
+  if command_entry_active then
+    keys.mode = command_entry_active.keys_mode
   elseif buffer._textredux then
     keys.mode = buffer._textredux.keys_mode
   else
@@ -269,7 +270,7 @@ function reduxbuffer:attach_to_command_entry()
   self.is_command_entry = true
   target:clear_all()
   target:focus()
-  ce_active = self
+  command_entry_active = self
   set_keys_mode()
   self:refresh()
 end
@@ -280,7 +281,7 @@ function reduxbuffer:close()
     ui.command_entry._textredux = nil
     ui.command_entry.read_only = false
     ui.command_entry:focus()
-    ce_active = nil
+    command_entry_active = nil
     set_keys_mode()
   else
     if not self:is_active() then view:goto_buffer(_BUFFERS[self.target]) end
@@ -574,7 +575,7 @@ function reduxbuffer:_restore_origin_buffer()
   if origin_buffer then
     local buf_index = _BUFFERS[origin_buffer]
     if buf_index and origin_buffer ~= buffer then
-      view:goto_buffer(buf_index, false)
+      view:goto_buffer(buf_index)
       keys.mode = self.origin_key_mode
     end
   end
@@ -640,7 +641,7 @@ local function _on_indicator_release(position)
   if not tr_buf then return end
 
   local cur_view = view
-  if tr_buf:_on_user_select(position, shift, ctrl, alt, meta) then
+  if tr_buf:_on_user_select(position) then
     -- If the view's buffer was switched as a result of the select, the new
     -- buffer will get a weird selection. Work around that
     -- somewhat by setting the buffer's position to the position it will get

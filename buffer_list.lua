@@ -132,8 +132,8 @@ function M.close_buffer(list)
     list:show()
     if closed then
       list:set_current_search(current_search)
-      buffer.goto_pos(math.min(current_pos, buffer.length + 1))
-      buffer.home()
+      buffer:goto_pos(math.min(current_pos, buffer.length + 1))
+      buffer:home()
       ui.statusbar_text = 'Closed ' .. name
     else
       ui.statusbar_text = ''
@@ -158,13 +158,12 @@ function M.close_selected(list)
     local current_pos = buffer.current_pos
     view:goto_buffer(sel_buffer)
     local closed = sel_buffer:close()
+    if not closed then break end -- user cancelled (e.g. unsaved-changes dialog)
     list.items = get_buffer_items()
     list:show()
-    if closed then
-      list:set_current_search(current_search)
-      buffer.goto_pos(math.min(current_pos, buffer.length + 1))
-      buffer.home()
-    end
+    list:set_current_search(current_search)
+    buffer:goto_pos(math.min(current_pos, buffer.length + 1))
+    buffer:home()
   end
   list:set_current_search('')
   ui.statusbar_text = 'All selected buffers closed'
