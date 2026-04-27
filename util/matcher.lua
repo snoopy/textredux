@@ -96,8 +96,8 @@ function M:match(search)
   if not search or #search == 0 then return self.candidates end
   local cache = self.cache
   if self.search_case_insensitive then search = search:lower() end
-  local matches = cache.matches[search] or {}
-  if #matches > 0 then return matches end
+  if cache.matches[search] then return cache.matches[search] end
+  local matches = {}
   local lines = cache.lines[string.sub(search, 1, -2)] or self.lines
   local matchers = self:_matchers_for_search(search)
 
