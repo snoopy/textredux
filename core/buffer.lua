@@ -153,8 +153,9 @@ reduxbuffer.origin_buffer_state = nil
 -- Look up values in the reduxbuffer table or the built-in buffer.
 local function __index(t, k)
   local value = rawget(t, k)
-  if value then return value end
-  if rawget(reduxbuffer, k) then return rawget(reduxbuffer, k) end
+  if value ~= nil then return value end
+  local pv = rawget(reduxbuffer, k)
+  if pv ~= nil then return pv end
   local target = rawget(t, 'target')
   if target then
     value = target[k]
@@ -169,10 +170,14 @@ local function __index(t, k)
 end
 
 -- Set values in the built-in target buffer or the Textredux buffer instance.
+-- rawget cannot be used on Textadept buffer proxies (they are metatabled Lua
+-- tables, not plain tables), so we probe via normal indexing instead. If the
+-- key resolves to a non-nil value on the target we forward the write there;
+-- otherwise we store it on the Textredux wrapper.
 local function __newindex(t, k, v)
   local target = rawget(t, 'target')
-  if target and rawget(t.target, k) then
-    rawset(t.target, k, v)
+  if target and target[k] ~= nil then
+    target[k] = v
   else
     rawset(t, k, v)
   end
