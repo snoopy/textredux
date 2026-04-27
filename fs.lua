@@ -149,8 +149,8 @@ local function normalize_dir_path(directory)
 end
 
 local function file(path, name, parent)
-  local file_info, error = fs_attributes(path)
-  if error then file_info = { mode = 'error' } end
+  local file_info, err = fs_attributes(path)
+  if err then file_info = { mode = 'error' } end
   local suffix = file_info.mode == 'directory' and separator or ''
   file_info.path = path
   file_info.hidden = name and string_sub(name, 1, 1) == '.'
@@ -248,9 +248,9 @@ local function open_selected_file(path, exists, list)
     })
     if button == 2 then return end
 
-    local file_handle, error = io.open(path, 'wb')
+    local file_handle, err = io.open(path, 'wb')
     if not file_handle then
-      ui.statusbar_text = 'Could not create ' .. path .. ': ' .. error
+      ui.statusbar_text = 'Could not create ' .. path .. ': ' .. err
       return
     end
     file_handle:close()

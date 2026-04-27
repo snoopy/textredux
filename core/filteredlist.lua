@@ -27,8 +27,8 @@ local function convert_multi_column_table(nr_columns, items)
   return _items
 end
 
-local function index_of(element, table)
-  for i, e in ipairs(table) do
+local function index_of(element, tbl)
+  for i, e in ipairs(tbl) do
     if e == element then return i end
   end
 end

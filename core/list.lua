@@ -373,7 +373,6 @@ end
 -- Limit movement to selectable lines and load more items for long lists.
 events.connect(events.UPDATE_UI, function(updated)
   if not updated then return end
-  local buffer = buffer
   local redux_buffer = buffer._textredux
   if not redux_buffer then return end
   if not redux_buffer.data.list then return end

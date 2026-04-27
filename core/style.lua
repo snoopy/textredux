@@ -122,9 +122,9 @@ local function apply(self, start_pos, length)
 end
 
 -- Copy a table.
-local function table_copy(table)
+local function table_copy(tbl)
   local new = {}
-  for k, v in pairs(table) do
+  for k, v in pairs(tbl) do
     new[k] = v
   end
   return new

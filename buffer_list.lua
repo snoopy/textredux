@@ -187,7 +187,6 @@ function M.show(buffers)
     end
   end
   M.list.items = get_buffer_items()
-  local buffer = buffer
   local active_buffer
   for index, item in ipairs(M.list.items) do
     if item.buffer == buffer then
