@@ -148,23 +148,6 @@ local function normalize_dir_path(directory)
   return path:gsub('[\\/]?%.?[\\/]?$', separator)
 end
 
-local function file(path, name, parent)
-  local file_info, err = fs_attributes(path)
-  if err then file_info = { mode = 'error' } end
-  local suffix = file_info.mode == 'directory' and separator or ''
-  file_info.path = path
-  file_info.hidden = name and string_sub(name, 1, 1) == '.'
-  if parent then
-    file_info.rel_path = parent.rel_path .. name .. suffix
-    file_info.depth = parent.depth + 1
-  else
-    file_info.rel_path = ''
-    file_info.depth = 1
-  end
-  file_info[1] = file_info.rel_path
-  return file_info
-end
-
 --[[ Recursively walks a directory and returns a list of file objects.
 @param directory The directory path to search (required)
 @param flatten If true, uses quick_open_filters and shows full recursive paths (optional)
@@ -178,31 +161,36 @@ local function find_files(directory, flatten, depth, max_files)
   if not depth then error('Missing argument #3 (depth)', 2) end
 
   local files = {}
+  -- Build a prefix used to derive rel_path by stripping the base directory.
+  -- normalize_path removes any trailing separator, so appending separator here
+  -- gives e.g. "/home/user/projects/" which is safe to use with string.sub.
+  local dir_prefix = normalize_path(directory) .. separator
   local FOLDERS = true
   for filepath in lfs.walk(directory, flatten and io.quick_open_filters or nil, depth == 1 and 0 or depth, FOLDERS) do
     if #files >= max_files then return files, false end
 
-    local parent_path = file(filepath:match('[/\\]([^/\\]+)[/\\][^/\\]+[/\\]?$') or '')
-    local filename = filepath:match('[/\\]([^/\\]+)[/\\]?$')
-    -- display full path if flatten is active
-    local file_obj = file(filepath, flatten and filepath or filename, parent_path)
+    local file_info, err = fs_attributes(filepath)
+    if err then file_info = { mode = 'error' } end
+    local bare = filepath:match('[/\\]([^/\\]+)[/\\]?$') or filepath
+    file_info.path = filepath
+    file_info.hidden = string_sub(bare, 1, 1) == '.'
+    -- In flatten mode show the full absolute path; otherwise strip the base
+    -- directory prefix so deeper items get a proper relative path like
+    -- "subdir/file.lua" rather than just the bare filename.
+    file_info.rel_path = flatten and filepath or filepath:sub(#dir_prefix + 1)
+    file_info[1] = file_info.rel_path
 
-    -- only add folders if flatten is not active
-    if not filepath:match('[/\\]$') or not flatten then table.insert(files, file_obj) end
+    -- In flatten mode only include files, not directories.
+    if not filepath:match('[/\\]$') or not flatten then files[#files + 1] = file_info end
   end
   return files, true
 end
 
 local function sort_items(items)
   local trailing_sep = separator .. '$'
+  local parent_path = '..' .. separator
   table.sort(items, function(a, b)
-    local self_path = '.' .. separator
-    local parent_path = '..' .. separator
-    if a.rel_path == self_path then
-      return true
-    elseif b.rel_path == self_path then
-      return false
-    elseif a.rel_path == parent_path then
+    if a.rel_path == parent_path then
       return true
     elseif b.rel_path == parent_path then
       return false
@@ -295,8 +283,7 @@ local function get_windows_drives()
   for i = 1, #letters do
     local drive = letters:sub(i, i) .. ':\\'
     if fs_attributes(drive) then
-      drives[#drives + 1] = file(drive, drive)
-      drives[#drives][1] = drive
+      drives[#drives + 1] = { mode = 'directory', path = drive, hidden = false, rel_path = drive, [1] = drive }
     end
   end
   return drives
