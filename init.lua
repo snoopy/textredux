@@ -13,8 +13,6 @@ It currently contains the following modules:
   text based interfaces.
 - @{textredux.fs}. Contains text based interfaces for file io operations,
   like open file, save file as well as snapopen functionality.
-- @{textredux.ctags}. Displays a filtered list of symbols (functions,
-  variables, …) in the current document using Exuberant Ctags.
 - @{textredux.buffer_list}. A text based buffer list replacement, which in
   addition to being text based also offers an easy way to close buffers
   directly from the list.
@@ -33,7 +31,6 @@ keys to the desired functions.
     keys.co = textredux.fs.open_file
     keys.cS = textredux.fs.save_buffer_as
     keys.cb = textredux.buffer_list.show
-    keys.cg = textredux.ctags.goto_symbol
 
 2) If you can't get enough of text based interfaces and the joy they provide,
 then the @{hijack} function is for you. Simply place this in your
@@ -55,7 +52,6 @@ Please see the modules documentation for more configuration settings.
 local M = {
   core = require('textredux.core'),
   buffer_list = require('textredux.buffer_list'),
-  ctags = require('textredux.ctags'),
   fs = require('textredux.fs'),
 }
 
