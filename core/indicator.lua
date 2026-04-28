@@ -65,12 +65,18 @@ end
 
 -- Called when a new table is added to the indicator module.
 local function define_indicator(t, name, properties)
-  if not properties.number then
-    local number = view.new_indic_number()
-    properties.number = number
+  -- Shallow-copy the caller's table so we don't mutate the original.
+  -- (The style module does the same via table_copy.)
+  local props = {}
+  for k, v in pairs(properties) do
+    props[k] = v
   end
-  properties.apply = apply
-  rawset(t, name, properties)
+  if not props.number then
+    local number = view.new_indic_number()
+    props.number = number
+  end
+  props.apply = apply
+  rawset(t, name, props)
 end
 
 -- Called to set indicator styles in a new buffer or view.
