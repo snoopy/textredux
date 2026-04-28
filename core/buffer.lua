@@ -305,9 +305,14 @@ will receive the buffer instance as its sole parameter.
 function reduxbuffer:update(callback)
   if not (self:is_attached() or self.is_command_entry) then error("Can't refresh: not attached") end
   self.target.read_only = false
-  callback(self)
+  local ok, err = xpcall(function()
+    callback(self)
+  end, function(e)
+    return e
+  end)
   self.target.read_only = self.read_only
   self:set_save_point()
+  if not ok then events.emit(events.ERROR, err) end
 end
 
 -- Block the default attempt to restore the previous caret position
