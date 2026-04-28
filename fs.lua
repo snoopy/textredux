@@ -425,7 +425,7 @@ local function create_list(directory, flatten, depth, max_files)
   list.keys['ctrl+a'] = function()
     for _, item in ipairs(list.buffer.data.matching_items) do
       if not item[1]:match('%.%.') then
-        local path = flatten and item[1] or list.data.directory .. separator .. item[1]
+        local path = list.data.flatten and item[1] or list.data.directory .. separator .. item[1]
         local attrs = fs_attributes(path)
         if attrs and attrs.mode == 'file' then io.open_file(path) end
       end
