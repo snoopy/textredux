@@ -143,6 +143,33 @@ function M.new(title, items, on_selection)
   return l
 end
 
+-- Track how many list buffers are currently shown so we connect/disconnect
+-- the UPDATE_UI handler exactly once regardless of how many lists are open.
+local active_list_count = 0
+
+-- Limit movement to selectable lines and load more items for long lists.
+-- Connected per-instance in list:show() and disconnected on buffer deletion
+-- so it only runs while at least one list buffer is visible.
+local function on_update_ui(updated)
+  if not updated then return end
+  local redux_buffer = buffer._textredux
+  if not redux_buffer then return end
+  if not redux_buffer.data.list then return end
+  if buffer.UPDATE_SELECTION & updated == buffer.UPDATE_SELECTION then
+    local line = buffer:line_from_position(buffer.current_pos)
+    local start_line = redux_buffer.data.items_start_line
+    local end_line = redux_buffer.data.items_end_line
+    if redux_buffer.data.shown_items < #redux_buffer.data.matching_items and line > end_line then
+      redux_buffer.data.list:_load_more_items()
+      buffer:goto_line(redux_buffer.data.items_end_line)
+    elseif line > end_line then
+      buffer:goto_line(end_line)
+    elseif line < start_line then
+      buffer:goto_line(start_line)
+    end
+  end
+end
+
 --- Shows the list.
 function list:show()
   self:_calculate_column_widths()
@@ -150,6 +177,14 @@ function list:show()
     matcher = util_matcher.new(self.items, self.search_case_insensitive, self.search_fuzzy),
     list = self,
   }
+  -- Connect the UPDATE_UI handler the first time this list instance is shown;
+  -- use a per-instance flag so repeated show() calls (e.g. on every chdir)
+  -- don't inflate the counter.
+  if not self._update_ui_active then
+    self._update_ui_active = true
+    active_list_count = active_list_count + 1
+    if active_list_count == 1 then events.connect(events.UPDATE_UI, on_update_ui) end
+  end
   self.buffer:show()
 end
 
@@ -332,6 +367,11 @@ function list:_create_buffer()
   self.data = self.buffer.data
 
   listbuffer.on_deleted = function()
+    if self._update_ui_active then
+      self._update_ui_active = false
+      active_list_count = active_list_count - 1
+      if active_list_count == 0 then events.disconnect(events.UPDATE_UI, on_update_ui) end
+    end
     self.data = {}
   end
 
@@ -369,26 +409,5 @@ function list:_create_buffer()
   })
   return listbuffer
 end
-
--- Limit movement to selectable lines and load more items for long lists.
-events.connect(events.UPDATE_UI, function(updated)
-  if not updated then return end
-  local redux_buffer = buffer._textredux
-  if not redux_buffer then return end
-  if not redux_buffer.data.list then return end
-  if buffer.UPDATE_SELECTION & updated == buffer.UPDATE_SELECTION then
-    local line = buffer:line_from_position(buffer.current_pos)
-    local start_line = redux_buffer.data.items_start_line
-    local end_line = redux_buffer.data.items_end_line
-    if redux_buffer.data.shown_items < #redux_buffer.data.matching_items and line > end_line then
-      redux_buffer.data.list:_load_more_items()
-      buffer:goto_line(redux_buffer.data.items_end_line)
-    elseif line > end_line then
-      buffer:goto_line(end_line)
-    elseif line < start_line then
-      buffer:goto_line(start_line)
-    end
-  end
-end)
 
 return M
