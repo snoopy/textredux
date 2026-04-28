@@ -97,6 +97,7 @@ local function on_selection(list, item)
   list:close()
   local target = item.buffer
   if buffer ~= target then view:goto_buffer(target) end
+  buffer:vertical_center_caret()
 end
 
 --[[-- Returns the currently selected buffer in the list.

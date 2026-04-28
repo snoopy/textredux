@@ -590,6 +590,7 @@ function reduxbuffer:_restore_origin_buffer()
     end
   end
   self:_restore_origin_buffer_state()
+  buffer:vertical_center_caret()
 end
 
 -- Event hooks.
