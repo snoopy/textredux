@@ -165,6 +165,19 @@ local function find_files(directory, flatten, depth, max_files)
   -- normalize_path removes any trailing separator, so appending separator here
   -- gives e.g. "/home/user/projects/" which is safe to use with string.sub.
   local dir_prefix = normalize_path(directory) .. separator
+
+  -- Prepend a ".." navigation entry in non-flatten mode so the user can always
+  -- navigate up; omit it at the filesystem root where dirname is a no-op.
+  if not flatten then
+    local parent = dirname(normalize_path(directory))
+    if parent ~= normalize_path(directory) then
+      local updir_entry = { mode = 'directory', path = parent, hidden = false }
+      updir_entry.rel_path = '..' .. separator
+      updir_entry[1] = updir_entry.rel_path
+      files[1] = updir_entry
+    end
+  end
+
   local FOLDERS = true
   for filepath in lfs.walk(directory, flatten and io.quick_open_filters or nil, depth == 1 and 0 or depth, FOLDERS) do
     if #files >= max_files then return files, false end
