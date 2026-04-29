@@ -375,6 +375,19 @@ function reduxbuffer:is_active()
   return self.target and self.target == buffer
 end
 
+-- Temporarily swap _G.buffer to self.target, call fn(), then restore.
+-- Uses xpcall so _G.buffer is always restored even if fn() raises an error;
+-- the error is forwarded via the ERROR event rather than propagating to the
+-- caller (consistent with how invoke_command handles errors).
+local function with_target(self, fn)
+  local saved_buf = buffer
+  _G.buffer = self.target
+  xpcall(fn, function(e)
+    events.emit(events.ERROR, e)
+  end)
+  _G.buffer = saved_buf
+end
+
 --[[-- Adds a hotspot for the given text range.
 Hotspots allows you to specify  what happens when the user selects
 a text range. Besides using this function directly, it's also possible and
@@ -406,15 +419,9 @@ function reduxbuffer:add_hotspot(start_pos, end_pos, command)
     hotspots[i] = current_spots
   end
   local length = end_pos - start_pos
-  -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on. This is so that when attached to the command
-  -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
-  -- functions, which assume they're working on the current buffer, still
-  -- work.
-  local saved_buf = buffer
-  _G.buffer = self.target
-  reduxindicator.HOTSPOT:apply(start_pos, length)
-  _G.buffer = saved_buf
+  with_target(self, function()
+    reduxindicator.HOTSPOT:apply(start_pos, length)
+  end)
 end
 
 -- Add styling and hotspot support to buffer text insertion functions.
@@ -433,19 +440,13 @@ text.
 function reduxbuffer:add_text(text, style, command, indicator)
   text = tostring(text)
   local insert_pos = self.target.current_pos
-  -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on. This is so that when attached to the command
-  -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
-  -- functions, which assume they're working on the current buffer, still
-  -- work.
-  local saved_buf = buffer
-  _G.buffer = self.target
-  self.target:add_text(text)
-  if not style then style = reduxstyle.default end
-  style:apply(insert_pos, #text)
-  if command then self:add_hotspot(insert_pos, insert_pos + #text, command) end
-  if indicator then indicator:apply(insert_pos, #text) end
-  _G.buffer = saved_buf
+  with_target(self, function()
+    self.target:add_text(text)
+    if not style then style = reduxstyle.default end
+    style:apply(insert_pos, #text)
+    if command then self:add_hotspot(insert_pos, insert_pos + #text, command) end
+    if indicator then indicator:apply(insert_pos, #text) end
+  end)
 end
 
 --[[-- Override for
@@ -463,18 +464,12 @@ function reduxbuffer:append_text(text, style, command, indicator)
   local insert_pos = self.target.length
   text = tostring(text)
   self.target:append_text(text)
-  -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on. This is so that when attached to the command
-  -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
-  -- functions, which assume they're working on the current buffer, still
-  -- work.
-  local saved_buf = buffer
-  _G.buffer = self.target
-  if not style then style = reduxstyle.default end
-  style:apply(insert_pos, #text)
-  if command then self:add_hotspot(insert_pos, insert_pos + #text, command) end
-  if indicator then indicator:apply(insert_pos, #text) end
-  _G.buffer = saved_buf
+  with_target(self, function()
+    if not style then style = reduxstyle.default end
+    style:apply(insert_pos, #text)
+    if command then self:add_hotspot(insert_pos, insert_pos + #text, command) end
+    if indicator then indicator:apply(insert_pos, #text) end
+  end)
 end
 
 --[[-- Override for
@@ -492,18 +487,12 @@ text.
 function reduxbuffer:insert_text(pos, text, style, command, indicator)
   text = tostring(text)
   self.target:insert_text(pos, text)
-  -- Temporarily replace the global Textadept `buffer` variable with the
-  -- buffer we're working on. This is so that when attached to the command
-  -- entry buffer (which `_G.buffer` doesn't point to), the styling etc.
-  -- functions, which assume they're working on the current buffer, still
-  -- work.
-  local saved_buf = buffer
-  _G.buffer = self.target
-  if not style then style = reduxstyle.default end
-  style:apply(pos, #text)
-  if command then self:add_hotspot(pos, pos + #text, command) end
-  if indicator then indicator:apply(pos, #text) end
-  _G.buffer = saved_buf
+  with_target(self, function()
+    if not style then style = reduxstyle.default end
+    style:apply(pos, #text)
+    if command then self:add_hotspot(pos, pos + #text, command) end
+    if indicator then indicator:apply(pos, #text) end
+  end)
 end
 
 -- Begin private code.
