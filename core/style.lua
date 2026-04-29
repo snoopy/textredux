@@ -244,6 +244,7 @@ end
 setmetatable(M, { __newindex = define_style })
 
 -- Ensure Textredux styles are defined after switching buffers or views.
+events.connect(events.BUFFER_NEW, M.activate_styles)
 events.connect(events.BUFFER_AFTER_SWITCH, M.activate_styles)
 events.connect(events.VIEW_NEW, M.activate_styles)
 events.connect(events.VIEW_AFTER_SWITCH, M.activate_styles)
