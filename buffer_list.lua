@@ -34,7 +34,7 @@ M.list = nil
 
 --[[-- The key bindings for the buffer list.
 
-You can modify this to customise the key bindings to your liking. The key
+You can modify this to customize the key bindings to your liking. The key
 bindings are passed directly to the Textredux list, so note that the
 first argument to any function will be the Textredux list itself.
 You can read more about the Textredux list's keys in the
@@ -175,8 +175,8 @@ function M.close_selected(list)
   ui.statusbar_text = 'All selected buffers closed'
 end
 
---- Shows a list of the specified buffers, or _G.BUFFERS if not specified.
--- @param buffers Either nil, in which case all buffers within _G.BUFFERS
+--- Shows a list of the specified buffers, or _BUFFERS if not specified.
+-- @param buffers Either nil, in which case all buffers within _BUFFERS
 -- are displayed, or a function returning a table of buffers to display.
 function M.show(buffers)
   buffer_source = buffers or function()

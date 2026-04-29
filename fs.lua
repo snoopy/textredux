@@ -228,6 +228,10 @@ local function chdir(list, directory)
   list.title = user_home and directory:gsub(user_home, '~') or directory
   list.items = items
   data.directory = directory
+  -- list:show() replaces list.buffer.data with a fresh table, which clears the
+  -- current search string. This is intentional: entering a new directory starts
+  -- a fresh search. Callers that want to preserve the search (e.g. toggle_flatten)
+  -- save and restore it themselves via get_current_search/set_current_search.
   list:show()
   if #items > 1 and items[1].rel_path:match('^%.%..?$') then list.buffer:line_down() end
   if not complete then
@@ -455,7 +459,9 @@ The list will not be closed automatically, so close it explicitly using
 @param start_directory The initial directory to open, in UTF-8 encoding. If
 nil, the initial directory is determined automatically (preferred choice is to
 open the directory containing the current file).
-@param flatten The flatten to apply, if any. (Currently accepted but not used.)
+@param flatten If true, uses @{io.quick_open_filters} and displays full
+recursive paths instead of bare filenames. Defaults to false (standard
+directory listing).
 @param depth The number of directory levels to display in the list. Defaults to
 1 if not specified, which results in a "normal" directory listing.
 @param max_files The maximum number of files to scan and display in the list.
@@ -487,6 +493,25 @@ function M.select_file(on_selection, start_directory, flatten, depth, max_files)
   chdir(list, start_directory)
 end
 
+--[[- Opens a directory browser and lets the user choose a directory.
+@param on_selection The function to invoke when the user has chosen a directory.
+The function will be called with following parameters:
+
+- `path`: The full path of the chosen directory (UTF-8 encoded), with a
+  trailing separator.
+- `exists`: A boolean indicating whether the path exists.
+- `list`: A reference to the Textredux list used by the browser.
+
+The list will not be closed automatically, so close it explicitly using
+`list:close()` if desired.
+
+@param start_directory The initial directory to open, in UTF-8 encoding. If
+nil, the initial directory is determined automatically.
+@param flatten If true, uses @{io.quick_open_filters} and displays full
+recursive paths. Defaults to false.
+@param depth The number of directory levels to display. Defaults to 1.
+@param max_files The maximum number of entries to scan. Defaults to 10000.
+]]
 function M.select_directory(on_selection, start_directory, flatten, depth, max_files)
   start_directory = start_directory or get_initial_directory()
 
@@ -579,12 +604,15 @@ parameters. This works similarly to
 The main differences are:
 
 - it does not support opening multiple paths at once
-- it uses lfs.default_filter internally for filtering.
+- it always uses `lfs.default_filter` for filtering, regardless of the
+  `_filter` / `_exclude_filter` parameters. This means custom
+  `io.quick_open_filters` settings are not applied when snapopen is
+  invoked via @{textredux.hijack}. Use @{select_file} directly for
+  custom filter control.
 
 @param directory The directory to open, in UTF-8 encoding.
-@param _filter The filter to apply. (Currently accepted but not used.)
-@param _exclude_FILTER Unless true, snapopen.FILTER will be automatically added
-to the filter. (Currently accepted but not used.)
+@param _filter Accepted for API compatibility but not used; see note above.
+@param _exclude_filter Accepted for API compatibility but not used; see note above.
 @param depth The number of directory levels to scan. Defaults to DEFAULT_DEPTH
 if not specified.
 ]]

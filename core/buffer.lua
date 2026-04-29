@@ -101,7 +101,7 @@ reduxbuffer.read_only = true
 
 ---
 -- Callback invoked whenever the target buffer is deleted.
--- The callback has the following with the following parameters: `buffer`
+-- The callback receives the buffer as its sole parameter.
 reduxbuffer.on_deleted = nil
 
 --[[-- Callback invoked whenever the buffer should refresh.
@@ -129,7 +129,7 @@ reduxbuffer.keys = nil
 
 --[[--
 A general purpose table that can be used for storing state associated with the
-buffer. The `data` table is will automatically be cleared whenever the target
+buffer. The `data` table will automatically be cleared whenever the target
 buffer is closed.
 ]]
 reduxbuffer.data = nil
@@ -201,6 +201,10 @@ function M.new(title)
   keys[buf.keys_mode] = {}
   setmetatable(keys[buf.keys_mode], { __index = keys })
   setmetatable(buf.keys, {
+    -- NB: buf.keys is intentionally write-only. Assignments are forwarded
+    -- directly into keys[buf.keys_mode] via __newindex; there is no __index,
+    -- so reading buf.keys[k] always returns nil regardless of what was set.
+    -- To inspect a key binding after setting it, read keys[buf.keys_mode][k].
     __newindex = function(_t, k, v)
       -- Add to keys mode.
       rawset(keys[buf.keys_mode], k, v)
@@ -216,7 +220,7 @@ function M.new(title)
 end
 
 -- Activate Textredux keys mode on buffer or view switch and file open.
--- Otherwise activate Textadept's  default keys  mode.
+-- Otherwise activate Textadept's default keys mode.
 local function set_keys_mode()
   if command_entry_active then
     keys.mode = command_entry_active.keys_mode
@@ -264,6 +268,11 @@ function reduxbuffer:show()
   keys.mode = self.keys_mode
 end
 
+--[[-- Attaches the buffer to the command entry instead of a regular buffer.
+This is used to turn Textadept's command entry into a Textredux buffer,
+enabling custom styling and key bindings within the entry widget.
+After calling this the buffer's @{on_refresh} handler is invoked immediately.
+]]
 function reduxbuffer:attach_to_command_entry()
   local target = ui.command_entry
   target._textredux = self
@@ -303,7 +312,7 @@ save point, etc.
 will receive the buffer instance as its sole parameter.
 ]]
 function reduxbuffer:update(callback)
-  if not (self:is_attached() or self.is_command_entry) then error("Can't refresh: not attached") end
+  if not (self:is_attached() or self.is_command_entry) then error('buffer is not attached', 2) end
   self.target.read_only = false
   local ok, err = xpcall(function()
     callback(self)
@@ -400,7 +409,7 @@ Note that all hotspots are cleared as part of a refresh.
 @param start_pos The start position
 @param end_pos The end position. The end position itself is not part of the
 hotspot.
-@param command The command to execute. Similarily to @{keys}, the command can
+@param command The command to execute. Similarly to @{keys}, the command can
 be either a function or a table. When the command is a function, it will be
 passed the buffer instance as a parameter.
 ]]

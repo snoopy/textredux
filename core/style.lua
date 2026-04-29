@@ -23,7 +23,7 @@ You define a new style by assigning a table with its properties to the module:
     reduxstyle.foo_header = { italics = true, fore = '#680000' }
 
 As has been previously said, it's often a good idea to base your custom styles
-on an existing default style. Similarily to defining a lexer style in Textadept
+on an existing default style. Similarly to defining a lexer style in Textadept
 you can achieve this by concatenating styles:
 
     reduxstyle.foo_header = style.string .. { underlined = true }

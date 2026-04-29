@@ -114,10 +114,28 @@ list.buffer = nil
 -- a reference to the list instead of a buffer reference.
 list.keys = nil
 
---- A general purpose table that can be used for storing state associated
--- with the list. Just like @{textredux.core.buffer.data}, the `data` table
--- is special in the way that it will automatically be cleared whenever the user
--- closes the buffer associated with the list.
+--[[--- A general purpose table for storing persistent state associated with
+-- the list. This is distinct from `list.buffer.data`, which is the per-render
+-- state table recreated on every @{list:show} call.
+--
+-- Design note - two data tables:
+--
+-- `list.data` is assigned once in `_create_buffer` and survives every
+-- subsequent `show()` call. Callers (e.g. `fs.lua`) store long-lived state
+-- here: current directory, flatten flag, depth, etc.
+--
+-- `list.buffer.data` is replaced with a fresh table on every `show()`. It
+-- holds transient per-render state: the matcher instance, matching_items,
+-- items_start_line, items_end_line, search string, etc. Code inside
+-- `_refresh`, `_add_items`, `get_current_selection`, and the UPDATE_UI
+-- handler always reads from `list.buffer.data`.
+--
+-- Never use `list.data` for render state, and never use `list.buffer.data`
+-- for state that must survive a `show()` call.
+--
+-- Like @{textredux.core.buffer.data}, `list.data` is automatically cleared
+-- whenever the user closes the buffer associated with the list.
+]]
 list.data = nil
 
 --- @section end
@@ -237,7 +255,7 @@ function list:_calculate_column_widths()
   self._column_widths = column_widths
 end
 
--- Return style for column from {@colum_styles} table.
+-- Return style for column from @{column_styles} table.
 function list:_column_style(item, column)
   local style = self.column_styles[column]
   if not style then return reduxstyle.default end

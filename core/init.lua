@@ -13,7 +13,7 @@ It currently consists of the following components:
   create a text based interface buffer by taking care of the background
   gruntwork required.
 
-  - The @{textredux.core.style} module that let's you easily define custom
+  - The @{textredux.core.style} module that lets you easily define custom
   styles, as well as leveraging the default styles already provided by the
   user's theme.
 
@@ -37,7 +37,7 @@ or you can just require the modules that you want by something
 similar to
 
     local reduxstyle = require('textredux.core.style')
-    local reduxbuffer = require('textredux.core.style')
+    local reduxbuffer = require('textredux.core.buffer')
 
 The examples provide an overview on how to use the various components and their
 features, and the documentation for each component provides more details.
