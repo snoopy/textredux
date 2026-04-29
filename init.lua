@@ -75,9 +75,9 @@ function M.hijack()
   local m_file = textadept.menu.menubar[_L['File']]
   local m_tools = textadept.menu.menubar[_L['Tools']]
   local m_buffer = textadept.menu.menubar[_L['Buffer']]
-  local m_bookmark = m_tools[_L['Bookmarks']]
+  local m_bookmark = m_tools and m_tools[_L['Bookmarks']]
 
-  local io_open = m_file[_L['Open']][2]
+  local io_open = m_file and m_file[_L['Open']] and m_file[_L['Open']][2]
 
   local replacements = {}
 
@@ -97,18 +97,19 @@ function M.hijack()
     if utf8_filenames then return io_open_file(utf8_filenames) end
     M.fs.open_file()
   end
-  replacements[io_open] = open_file_compat
+  if io_open then replacements[io_open] = open_file_compat end
 
-  -- Hijack filteredlist for the below functions.
-  local select_lexer = m_buffer[_L['Select Lexer...']][2]
-  local select_command = m_tools[_L['Select Command']][2]
-  local goto_mark = m_bookmark[_L['Go To Bookmark...']][2]
-  local fl_funcs = {
-    select_lexer,
-    io.open_recent_file,
-    select_command,
-    goto_mark,
-  }
+  -- Hijack filteredlist for available menu functions; guard each lookup so a
+  -- missing or renamed menu item (e.g. on non-English Textadept) does not
+  -- crash hijack(). Build fl_funcs without holes so ipairs covers every entry.
+  local select_lexer = m_buffer and m_buffer[_L['Select Lexer...']] and m_buffer[_L['Select Lexer...']][2]
+  local select_command = m_tools and m_tools[_L['Select Command']] and m_tools[_L['Select Command']][2]
+  local goto_mark = m_bookmark and m_bookmark[_L['Go To Bookmark...']] and m_bookmark[_L['Go To Bookmark...']][2]
+  local fl_funcs = {}
+  if select_lexer then fl_funcs[#fl_funcs + 1] = select_lexer end
+  fl_funcs[#fl_funcs + 1] = io.open_recent_file
+  if select_command then fl_funcs[#fl_funcs + 1] = select_command end
+  if goto_mark then fl_funcs[#fl_funcs + 1] = goto_mark end
 
   for _, target in ipairs(fl_funcs) do
     local wrap = M.core.filteredlist.wrap(target)
