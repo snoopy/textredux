@@ -81,6 +81,8 @@ function M.hijack()
 
   local replacements = {}
 
+  local buffer_save = buffer.save
+  local buffer_save_as = buffer.save_as
   local io_quick_open = io.quick_open
   local function snapopen_compat(utf8_paths, filter, exclude_FILTER, ...)
     if not utf8_paths then utf8_paths = io.get_project_root() end
@@ -123,8 +125,8 @@ function M.hijack()
   replacements[io.quick_open] = snapopen_compat
   io.quick_open = snapopen_compat
 
-  replacements[buffer.save] = M.fs.save_buffer
-  replacements[buffer.save_as] = M.fs.save_buffer_as
+  replacements[buffer_save] = M.fs.save_buffer
+  replacements[buffer_save_as] = M.fs.save_buffer_as
 
   -- Finalize by patching keys.
   patch_keys(replacements)
