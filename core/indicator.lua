@@ -96,6 +96,7 @@ end
 
 -- Ensure Textredux indicators are defined after switching buffers or views.
 events.connect(events.BUFFER_NEW, activate_indicators)
+events.connect(events.BUFFER_AFTER_SWITCH, activate_indicators)
 events.connect(events.VIEW_NEW, activate_indicators)
 events.connect(events.VIEW_AFTER_SWITCH, activate_indicators)
 
