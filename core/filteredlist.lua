@@ -63,6 +63,12 @@ end
 -- Wrap
 function M.wrap(func)
   return function(...)
+    if current_coroutine then
+      -- A wrapped call is already in progress.
+      -- Invoking a second one would silently overwrite current_coroutine, permanently leaking the first coroutine.
+      -- Fall back to calling func directly without the override.
+      return func(...)
+    end
     current_coroutine = coroutine.create(func)
     local status, val = coroutine.resume(current_coroutine)
     current_coroutine = nil
