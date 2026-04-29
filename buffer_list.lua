@@ -86,9 +86,13 @@ local function get_buffer_items()
     end
   end
   table.sort(items, function(a, b)
+    -- Keep named-directory items and nil-directory items as separate groups so
+    -- that mixed comparisons never produce contradictory orderings (which would
+    -- violate the strict weak ordering required by table.sort).
+    if a[2] and not b[2] then return true end
+    if not a[2] and b[2] then return false end
     if a[2] == b[2] then return a[1] < b[1] end
-    if a[2] and b[2] then return a[2] < b[2] end
-    return a[1] < b[1]
+    return a[2] < b[2]
   end)
   return items
 end
