@@ -517,7 +517,9 @@ function M.select_directory(on_selection, start_directory, flatten, depth, max_f
       return
     end
 
-    on_selection(normalize_dir_path(path), false, list, shift, ctrl, alt, meta)
+    local normalized = normalize_dir_path(path)
+    local exists = lfs.attributes(path, 'mode') ~= nil
+    on_selection(normalized, exists, list, shift, ctrl, alt, meta)
   end
 
   chdir(list, start_directory)
