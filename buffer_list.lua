@@ -60,6 +60,7 @@ local buffer_source
 local function shorten_home_dir(directory)
   if not directory then return end
   local home_dir = os.getenv('HOME') or os.getenv('UserProfile')
+  if not home_dir then return directory end
   return directory:gsub(home_dir, '~')
 end
 
