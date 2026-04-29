@@ -222,13 +222,21 @@ end
 -- @param properties The table describing the style
 local function define_style(t, name, properties)
   local new_properties = table_copy(properties)
-  local count = 0
-  for _, v in pairs(M) do
-    if type(v) == 'table' then count = count + 1 end
+  -- If this name already maps to a style, reuse its slot number. Allocating a
+  -- fresh number would leave the old slot permanently unreferenced (leaked)
+  -- and eventually cause collisions with subsequent new style definitions.
+  local existing = rawget(t, name)
+  if existing and type(existing) == 'table' then
+    new_properties.number = existing.number
+  else
+    local count = 0
+    for _, v in pairs(M) do
+      if type(v) == 'table' then count = count + 1 end
+    end
+    local number = STYLE_LASTPREDEFINED + count + 1
+    if number > STYLE_MAX then error('Maximum style number exceeded') end
+    new_properties.number = number
   end
-  local number = STYLE_LASTPREDEFINED + count + 1
-  if number > STYLE_MAX then error('Maximum style number exceeded') end
-  new_properties.number = number
   new_properties.apply = apply
   rawset(t, name, new_properties)
 end
