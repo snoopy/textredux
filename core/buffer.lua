@@ -411,7 +411,7 @@ function reduxbuffer:add_hotspot(start_pos, end_pos, command)
   local end_line = target:line_from_position(end_pos - 1)
 
   for i = start_line, end_line do
-    local start_p = i == start_line and start_pos or 0
+    local start_p = i == start_line and start_pos or target:position_from_line(i)
     local end_p = i == end_line and end_pos or huge
     local hotspot = { start_pos = start_p, end_pos = end_p, command = command }
     local current_spots = hotspots[i] or {}
