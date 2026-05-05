@@ -58,9 +58,9 @@ local M = {}
 -- @param position The start position
 -- @param length The length of the range to fill
 local function apply(self, position, length)
-  local buffer = buffer
-  buffer.indicator_current = self.number
-  buffer:indicator_fill_range(position, length)
+  local buf = buffer
+  buf.indicator_current = self.number
+  buf:indicator_fill_range(position, length)
 end
 
 -- Called when a new table is added to the indicator module.
@@ -81,15 +81,15 @@ end
 
 -- Called to set indicator styles in a new buffer or view.
 local function activate_indicators()
-  local buffer = buffer
+  local buf = buffer
   for _, properties in pairs(M) do
     if type(properties) == 'table' then
       local number = properties.number
-      if properties.style then buffer.indic_style[number] = properties.style end
-      if properties.alpha then buffer.indic_alpha[number] = properties.alpha end
-      if properties.outline_alpha then buffer.indic_outline_alpha[number] = properties.outline_alpha end
-      if properties.fore then buffer.indic_fore[number] = color.string_to_color(properties.fore) end
-      if properties.under then buffer.indic_under[number] = properties.under end
+      if properties.style then buf.indic_style[number] = properties.style end
+      if properties.alpha then buf.indic_alpha[number] = properties.alpha end
+      if properties.outline_alpha then buf.indic_outline_alpha[number] = properties.outline_alpha end
+      if properties.fore then buf.indic_fore[number] = color.string_to_color(properties.fore) end
+      if properties.under then buf.indic_under[number] = properties.under end
     end
   end
 end

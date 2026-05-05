@@ -522,9 +522,9 @@ function reduxbuffer:_create_target()
 end
 
 -- Invoke command.
-local function invoke_command(command, buffer)
+local function invoke_command(command, buf)
   local f = command
-  local args = { buffer, shift, ctrl, alt, meta }
+  local args = { buf, shift, ctrl, alt, meta }
   if type(command) == 'table' then
     f = command[1]
     args = { table.unpack(command, 2) }

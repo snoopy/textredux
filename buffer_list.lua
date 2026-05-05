@@ -64,25 +64,25 @@ local function shorten_home_dir(directory)
   return directory:gsub(home_dir, '~')
 end
 
-local function buffer_title(buffer)
-  local title = (buffer.filename or ''):match('[\\/]([^/\\]+)$')
-  return title or buffer.filename or buffer._type or _L['Untitled']
+local function buffer_title(buf)
+  local title = (buf.filename or ''):match('[\\/]([^/\\]+)$')
+  return title or buf.filename or buf._type or _L['Untitled']
 end
 
-local function buffer_directory(buffer)
-  if not buffer.filename then return nil end
-  return shorten_home_dir(buffer.filename:match('^(.+[\\/])[^/\\]+$'))
+local function buffer_directory(buf)
+  if not buf.filename then return nil end
+  return shorten_home_dir(buf.filename:match('^(.+[\\/])[^/\\]+$'))
 end
 
 local function get_buffer_items()
   local items = {}
-  for _, buffer in ipairs(buffer_source()) do
-    if M.list.buffer.target ~= buffer then
-      local modified = buffer.modify and '*' or ''
+  for _, buf in ipairs(buffer_source()) do
+    if M.list.buffer.target ~= buf then
+      local modified = buf.modify and '*' or ''
       items[#items + 1] = {
-        buffer_title(buffer) .. modified,
-        buffer_directory(buffer),
-        buffer = buffer,
+        buffer_title(buf) .. modified,
+        buffer_directory(buf),
+        buffer = buf,
       }
     end
   end

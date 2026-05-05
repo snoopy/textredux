@@ -580,9 +580,9 @@ end
 --- Saves the current buffer.
 -- Prompts the users for a filename if it's a new, previously unsaved buffer.
 function M.save_buffer()
-  local buffer = _G.buffer
-  if buffer.filename then
-    buffer:save()
+  local buf = _G.buffer
+  if buf.filename then
+    buf:save()
   else
     M.save_buffer_as()
   end

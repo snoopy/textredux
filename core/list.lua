@@ -208,10 +208,10 @@ end
 
 --- Returns the currently selected item if any, or nil otherwise.
 function list:get_current_selection()
-  local buffer = self.buffer
-  if buffer:is_showing() then
-    local data = buffer.data
-    local current_line = buffer:line_from_position(buffer.current_pos)
+  local buf = self.buffer
+  if buf:is_showing() then
+    local data = buf.data
+    local current_line = buf:line_from_position(buf.current_pos)
     if current_line >= data.items_start_line and current_line <= data.items_end_line then
       return data.matching_items[current_line - data.items_start_line + 1]
     end
@@ -263,10 +263,10 @@ function list:_column_style(item, column)
 end
 
 -- Add text and padding.
-local function add_column_text(buffer, text, pad_to, style)
-  buffer:add_text(text, style)
+local function add_column_text(buf, text, pad_to, style)
+  buf:add_text(text, style)
   local padding = (pad_to + 1) - #text
-  if padding > 0 then buffer:add_text(string_rep(' ', padding)) end
+  if padding > 0 then buf:add_text(string_rep(' ', padding)) end
 end
 
 -- Highlight matches.
@@ -280,7 +280,7 @@ end
 
 -- Add items.
 function list:_add_items(items, start_index, end_index)
-  local buffer = self.buffer
+  local buf = self.buffer
   local data = self.buffer.data
   local search = data.search
   local column_widths = self._column_widths
@@ -290,51 +290,51 @@ function list:_add_items(items, start_index, end_index)
     local item = items[index]
     if item == nil then break end
     local columns = type(item) == 'table' and item or { item }
-    local line_start = buffer.current_pos
+    local line_start = buf.current_pos
     for j, field in ipairs(columns) do
       local pad_to = j == nr_columns and 0 or column_widths[j]
-      add_column_text(buffer, tostring(field), pad_to, self:_column_style(columns, j))
+      add_column_text(buf, tostring(field), pad_to, self:_column_style(columns, j))
     end
 
     if self.match_highlight_style then
-      local explanations = data.matcher:explain(search, buffer:get_cur_line())
+      local explanations = data.matcher:explain(search, buf:get_cur_line())
       highlight_matches(explanations, line_start, self.match_highlight_style)
     end
 
-    buffer:add_text('\n')
+    buf:add_text('\n')
     if self.on_selection then
       local handler = function(_buf, shift, ctrl, alt, meta)
         self.on_selection(self, item, shift, ctrl, alt, meta)
       end
-      buffer:add_hotspot(line_start, buffer.current_pos, handler)
+      buf:add_hotspot(line_start, buf.current_pos, handler)
     end
   end
   data.shown_items = end_index
-  data.items_end_line = buffer:line_from_position(buffer.current_pos) - 1
+  data.items_end_line = buf:line_from_position(buf.current_pos) - 1
 
   if #items > end_index then
     local message = string.format('[..] (%d more items not shown, press <down> here to see more)', #items - end_index)
-    buffer:add_text(message, reduxstyle.comment)
+    buf:add_text(message, reduxstyle.comment)
   end
 end
 
 -- Refresh list.
 function list:_refresh()
-  local buffer = self.buffer
-  local data = buffer.data
+  local buf = self.buffer
+  local data = buf.data
   data.matching_items = data.matcher:match(data.search)
 
   -- Header.
-  buffer:add_text(self.title .. ' : ')
-  buffer:add_text(#data.matching_items, reduxstyle.number)
-  buffer:add_text('/')
-  buffer:add_text(#self.items, reduxstyle.number)
-  buffer:add_text(' items')
+  buf:add_text(self.title .. ' : ')
+  buf:add_text(#data.matching_items, reduxstyle.number)
+  buf:add_text('/')
+  buf:add_text(#self.items, reduxstyle.number)
+  buf:add_text(' items')
   if data.search and #data.search > 0 then
-    buffer:add_text(' matching ')
-    buffer:add_text(data.search, reduxstyle.comment)
+    buf:add_text(' matching ')
+    buf:add_text(data.search, reduxstyle.comment)
   end
-  buffer:add_text('\n\n')
+  buf:add_text('\n\n')
 
   -- Item listing.
   local column_widths = self._column_widths
@@ -345,33 +345,33 @@ function list:_refresh()
   if headers then
     for i, header in ipairs(headers) do
       local pad_to = i == nr_columns and 0 or column_widths[i]
-      add_column_text(buffer, header, pad_to, self.header_style)
+      add_column_text(buf, header, pad_to, self.header_style)
     end
-    buffer:add_text('\n')
+    buf:add_text('\n')
   end
 
   -- Items.
-  data.items_start_line = buffer:line_from_position(buffer.current_pos)
-  local nr_items = buffer.lines_on_screen - data.items_start_line - 1
+  data.items_start_line = buf:line_from_position(buf.current_pos)
+  local nr_items = buf.lines_on_screen - data.items_start_line - 1
   self:_add_items(data.matching_items, 1, nr_items)
-  buffer:goto_line(data.items_start_line)
-  buffer:home()
+  buf:goto_line(data.items_start_line)
+  buf:home()
 end
 
 -- Load more items.
 function list:_load_more_items()
-  local buffer = self.buffer
-  local data = buffer.data
+  local buf = self.buffer
+  local data = buf.data
   local start_index = data.shown_items + 1
-  local end_index = start_index + buffer.lines_on_screen - 3
-  buffer:goto_pos(buffer.length)
-  buffer:home()
+  local end_index = start_index + buf.lines_on_screen - 3
+  buf:goto_pos(buf.length)
+  buf:home()
 
-  buffer:update(function()
-    buffer:del_line_right()
+  buf:update(function()
+    buf:del_line_right()
     self:_add_items(data.matching_items, start_index, end_index)
   end)
-  buffer:goto_pos(buffer.length)
+  buf:goto_pos(buf.length)
 end
 
 -- Create Textredux buffer to display the list.

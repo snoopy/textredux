@@ -116,9 +116,9 @@ local STYLE_MAX = buffer.STYLE_MAX
 -- @param start_pos The start position
 -- @param length The number of chars to style
 local function apply(self, start_pos, length)
-  local buffer = buffer
-  buffer:start_styling(start_pos, 0xff)
-  buffer:set_styling(length, self.number)
+  local buf = buffer
+  buf:start_styling(start_pos, 0xff)
+  buf:set_styling(length, self.number)
 end
 
 -- Copy a table.
