@@ -259,9 +259,11 @@ yet or having been deleted, it is automatically created. Upon the return, the
 buffer is showing and set as the global buffer.
 ]]
 function reduxbuffer:show()
-  self.origin_buffer = buffer
-  self.origin_key_mode = keys.mode
-  self:_save_origin_buffer_state()
+  if not self:is_showing() then
+    self.origin_buffer = buffer
+    self.origin_key_mode = keys.mode
+    self:_save_origin_buffer_state()
+  end
   if not self:is_attached() then self:_create_target() end
   if not self:is_showing() then view:goto_buffer(_BUFFERS[self.target]) end
   self:refresh()
@@ -566,8 +568,10 @@ function reduxbuffer:_restore_origin_buffer_state()
 end
 
 -- Return to the buffer in which the Textredux buffer was opened.
--- Ensures BUFFER_AFTER_SWITCH fires on the origin buffer so that Textadept's
--- restore_buffer_state() restores fold state, cursor position and scroll offset.
+-- When close lands on a different buffer, goto_buffer fires BUFFER_AFTER_SWITCH
+-- on the origin so Textadept's restore_buffer_state() restores folds/cursor/scroll.
+-- When close lands directly on the origin, the C-level delete_buffer already
+-- emitted buffer_after_switch, so no manual emit is needed.
 function reduxbuffer:_restore_origin_buffer()
   local origin_buffer = self.origin_buffer
   if not origin_buffer or not _BUFFERS[origin_buffer] then return end
@@ -575,13 +579,10 @@ function reduxbuffer:_restore_origin_buffer()
     -- Origin is not the active buffer (close landed on a different buffer).
     -- goto_buffer triggers BUFFER_AFTER_SWITCH which restores state.
     view:goto_buffer(_BUFFERS[origin_buffer])
-  else
-    -- buffer:close() silently switched the view to the origin buffer at the
-    -- C level (SCI_SETDOCPOINTER) without emitting Lua events.  Fold expanded
-    -- state was reset by Scintilla during the doc-pointer swap, so we must
-    -- trigger Textadept's restore_buffer_state() to re-apply saved folds.
-    events.emit(events.BUFFER_AFTER_SWITCH)
   end
+  -- When origin_buffer == buffer, the C-level delete_buffer already emitted
+  -- buffer_after_switch (textadept.c:delete_buffer_lua), so restore_buffer_state
+  -- has already run. Emitting it again would double-toggle folds.
   if self.origin_key_mode then keys.mode = self.origin_key_mode end
   self:_restore_origin_buffer_state()
   buffer:vertical_center_caret()
@@ -659,4 +660,17 @@ events.connect(events.BUFFER_AFTER_SWITCH, _on_buffer_after_switch)
 events.connect(events.INDICATOR_RELEASE, _on_indicator_release)
 events.connect(events.QUIT, _on_quit, 1)
 events.connect(events.RESET_BEFORE, _on_quit)
+
+-- Prevent double-toggle of folds when buffer_after_switch fires twice on the
+-- same buffer during a single close operation.  Textadept's delete_buffer_lua
+-- unconditionally emits buffer_after_switch after the BUFFER_DELETED handler may
+-- have already triggered one via view:goto_buffer(view._prev_buffer).  Since
+-- restore_buffer_state() uses toggle_fold (not idempotent), the second fire
+-- expands folds that the first fire just collapsed.  Clearing _folds after
+-- restore makes a redundant second call a no-op; save_buffer_state() will
+-- re-capture fold state from the live view on the next BUFFER_BEFORE_SWITCH.
+events.connect(events.BUFFER_AFTER_SWITCH, function()
+  buffer._folds = nil
+end)
+
 return M
