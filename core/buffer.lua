@@ -143,8 +143,8 @@ reduxbuffer.target = nil
 -- Stored to be able to go back to after closing the Textredux buffer.
 reduxbuffer.origin_buffer = nil
 
---- The saved state of the origin buffer.
--- Stores buffer properties for restoration when returning from a Textredux buffer.
+--- Saved view-level properties of the origin buffer (wrap_mode, margin width).
+-- Textadept does not save/restore these on buffer switch, so we handle them.
 reduxbuffer.origin_buffer_state = nil
 
 ---
@@ -299,6 +299,12 @@ function reduxbuffer:close()
     set_keys_mode()
   else
     if not self:is_active() then view:goto_buffer(_BUFFERS[self.target]) end
+    -- Neutralize Textadept's BUFFER_DELETED handler which would otherwise
+    -- call view:goto_buffer(view._prev_buffer). We handle switching back to
+    -- the origin buffer ourselves, ensuring BUFFER_AFTER_SWITCH fires exactly
+    -- once on the origin so that Textadept's restore_buffer_state() restores
+    -- fold state, cursor position and scroll offset.
+    view._prev_buffer = nil
     self.target:close()
     if self.origin_buffer then self:_restore_origin_buffer() end
   end
@@ -536,19 +542,14 @@ end
 
 function reduxbuffer:_save_origin_buffer_state()
   if not self.origin_buffer or not _BUFFERS[self.origin_buffer] then return end
-  local state = {}
-  state.wrap_mode = self.origin_buffer.wrap_mode
-  state.margin_width_n = {
-    self.origin_buffer.margin_width_n[1],
+  -- Only save view-level properties that Textadept does not save/restore.
+  -- Fold state, cursor position and scroll offset are handled by Textadept's
+  -- built-in save_buffer_state/restore_buffer_state (core/ui.lua) which fires
+  -- on BUFFER_BEFORE_SWITCH / BUFFER_AFTER_SWITCH.
+  self.origin_buffer_state = {
+    wrap_mode = self.origin_buffer.wrap_mode,
+    margin_width_n_1 = self.origin_buffer.margin_width_n[1],
   }
-  state.fold_expanded = {}
-  for line = 1, self.origin_buffer.line_count do
-    if (self.origin_buffer.fold_level[line] & buffer.FOLDLEVELHEADERFLAG) ~= 0 then
-      state.fold_expanded[line] = self.origin_buffer.fold_expanded[line]
-    end
-  end
-
-  self.origin_buffer_state = state
 end
 
 function reduxbuffer:_restore_origin_buffer_state()
@@ -559,34 +560,29 @@ function reduxbuffer:_restore_origin_buffer_state()
   end
   local state = self.origin_buffer_state
   if not state then return end
-
   self.origin_buffer.wrap_mode = state.wrap_mode
-
-  if state.margin_width_n then self.origin_buffer.margin_width_n[1] = state.margin_width_n[1] end
-
-  for line, expanded in pairs(state.fold_expanded) do
-    if line <= self.origin_buffer.line_count then
-      if expanded and not self.origin_buffer.fold_expanded[line] then
-        self.origin_buffer:toggle_fold(line)
-      elseif not expanded and self.origin_buffer.fold_expanded[line] then
-        self.origin_buffer:toggle_fold(line)
-      end
-    end
-  end
-
+  self.origin_buffer.margin_width_n[1] = state.margin_width_n_1
   self.origin_buffer_state = nil
 end
 
 -- Return to the buffer in which the Textredux buffer was opened.
+-- Ensures BUFFER_AFTER_SWITCH fires on the origin buffer so that Textadept's
+-- restore_buffer_state() restores fold state, cursor position and scroll offset.
 function reduxbuffer:_restore_origin_buffer()
   local origin_buffer = self.origin_buffer
-  if origin_buffer then
-    local buf_index = _BUFFERS[origin_buffer]
-    if buf_index and origin_buffer ~= buffer then
-      view:goto_buffer(buf_index)
-      keys.mode = self.origin_key_mode
-    end
+  if not origin_buffer or not _BUFFERS[origin_buffer] then return end
+  if origin_buffer ~= buffer then
+    -- Origin is not the active buffer (close landed on a different buffer).
+    -- goto_buffer triggers BUFFER_AFTER_SWITCH which restores state.
+    view:goto_buffer(_BUFFERS[origin_buffer])
+  else
+    -- buffer:close() silently switched the view to the origin buffer at the
+    -- C level (SCI_SETDOCPOINTER) without emitting Lua events.  Fold expanded
+    -- state was reset by Scintilla during the doc-pointer swap, so we must
+    -- trigger Textadept's restore_buffer_state() to re-apply saved folds.
+    events.emit(events.BUFFER_AFTER_SWITCH)
   end
+  if self.origin_key_mode then keys.mode = self.origin_key_mode end
   self:_restore_origin_buffer_state()
   buffer:vertical_center_caret()
 end
@@ -617,13 +613,6 @@ local function _on_buffer_deleted()
       break
     end
   end
-end
-
-local function _on_buffer_before_switch()
-  local redux = view.buffer._textredux
-  if not redux then return end
-  local state = redux.origin_buffer_state
-  if state and state.margin_width_n then view.buffer.margin_width_n[1] = state.margin_width_n[1] end
 end
 
 local function _on_buffer_after_switch()
@@ -666,7 +655,6 @@ local function _on_indicator_release(position)
 end
 
 events.connect(events.BUFFER_DELETED, _on_buffer_deleted)
-events.connect(events.BUFFER_BEFORE_SWITCH, _on_buffer_before_switch)
 events.connect(events.BUFFER_AFTER_SWITCH, _on_buffer_after_switch)
 events.connect(events.INDICATOR_RELEASE, _on_indicator_release)
 events.connect(events.QUIT, _on_quit, 1)
