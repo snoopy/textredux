@@ -201,7 +201,13 @@ function M.show(buffers)
   end
   M.list:show()
   if active_buffer then
-    local line = M.list.buffer.data.items_start_line + active_buffer
+    local data = M.list.buffer.data
+    -- Ensure the target item has been rendered.
+    -- For long lists that exceed lines_on_screen, items are loaded lazily.
+    while active_buffer > data.shown_items and data.shown_items < #data.matching_items do
+      M.list:_load_more_items()
+    end
+    local line = data.items_start_line + active_buffer
     M.list.buffer:goto_line(line - 1)
   end
   local short_cut = CURSES and '[Meta+D]' or '[Ctrl+Shift+D]'
