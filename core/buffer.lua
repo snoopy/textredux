@@ -574,7 +574,15 @@ end
 -- emitted buffer_after_switch, so no manual emit is needed.
 function reduxbuffer:_restore_origin_buffer()
   local origin_buffer = self.origin_buffer
-  if not origin_buffer or not _BUFFERS[origin_buffer] then return end
+  if not origin_buffer or not _BUFFERS[origin_buffer] then
+    local state = self.origin_buffer_state
+    if state then
+      buffer.wrap_mode = state.wrap_mode
+      buffer.margin_width_n[1] = state.margin_width_n_1
+      self.origin_buffer_state = nil
+    end
+    return
+  end
   if origin_buffer ~= buffer then
     -- Origin is not the active buffer (close landed on a different buffer).
     -- goto_buffer triggers BUFFER_AFTER_SWITCH which restores state.
