@@ -163,9 +163,8 @@ local function find_files(directory, flatten, depth, max_files)
 
   local files = {}
   -- Build a prefix used to derive rel_path by stripping the base directory.
-  -- normalize_path removes any trailing separator, so appending separator here
   -- gives e.g. "/home/user/projects/" which is safe to use with string.sub.
-  local dir_prefix = normalize_path(directory) .. separator
+  local dir_prefix = normalize_dir_path(directory)
 
   -- Prepend a ".." navigation entry in non-flatten mode so the user can always
   -- navigate up; omit it at the filesystem root where dirname is a no-op.
@@ -192,6 +191,7 @@ local function find_files(directory, flatten, depth, max_files)
     -- directory prefix so deeper items get a proper relative path like
     -- "subdir/file.lua" rather than just the bare filename.
     file_info.rel_path = flatten and filepath or filepath:sub(#dir_prefix + 1)
+    if WIN32 then file_info.rel_path = file_info.rel_path:gsub('^\\', '') end
     file_info[1] = file_info.rel_path
 
     -- In flatten mode only include files, not directories.
