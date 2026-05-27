@@ -376,15 +376,22 @@ local function create_list(directory, flatten, depth, max_files)
   list.keys['alt+f'] = toggle_flatten
 
   list.keys['alt+r'] = function()
+    list.data.flatten = false
+    list.data.prev_depth = nil
     if WIN32 then
       display_windows_root(list)
     else
+      list.data.depth = 1
       chdir(list, '/')
     end
   end
 
   list.keys['alt+u'] = function()
-    if user_home then chdir(list, user_home) end
+    if not user_home then return end
+    list.data.flatten = false
+    list.data.prev_depth = nil
+    list.data.depth = 1
+    chdir(list, user_home)
   end
 
   list.keys['left'] = function()
