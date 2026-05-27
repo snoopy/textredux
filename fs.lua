@@ -61,6 +61,8 @@ local reduxstyle = require('textredux.core.style')
 
 local string_sub = string.sub
 
+local WIN32 = OS == 'windows'
+
 local user_home = os.getenv('HOME') or os.getenv('UserProfile')
 local fs_attributes = WIN32 and lfs.attributes or lfs.symlinkattributes
 local separator = WIN32 and '\\' or '/'

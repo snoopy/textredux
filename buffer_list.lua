@@ -29,6 +29,8 @@ local reduxlist = require('textredux.core.list')
 
 local M = {}
 
+local CURSES = UI == 'terminal'
+
 --- The Textredux list instance used by the buffer list.
 M.list = nil
 

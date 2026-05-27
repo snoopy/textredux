@@ -69,6 +69,8 @@ and perform your work within the callbacks.
 
 local M = {}
 
+local CURSES = UI == 'terminal'
+
 -- Default keys mode when not in a Textredux buffer.
 -- is nil per the docs at:
 -- https://orbitalquark.github.io/textadept/api.html#keys.mode
