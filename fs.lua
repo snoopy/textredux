@@ -130,7 +130,7 @@ local function normalize_path(path)
   for _, part in ipairs(parts) do
     if part == '..' then
       table.remove(normalized)
-    else
+    elseif part ~= '.' then
       normalized[#normalized + 1] = part
     end
   end
@@ -145,7 +145,8 @@ end
 -- with a trailing separator
 local function normalize_dir_path(directory)
   local path = normalize_path(directory)
-  return path:gsub('[\\/]?%.?[\\/]?$', separator)
+  if path:sub(-1, -1) ~= separator then path = path .. separator end
+  return path
 end
 
 --[[ Recursively walks a directory and returns a list of file objects.
