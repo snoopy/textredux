@@ -145,7 +145,7 @@ reduxbuffer.target = nil
 -- Stored to be able to go back to after closing the Textredux buffer.
 reduxbuffer.origin_buffer = nil
 
---- Saved view-level properties of the origin buffer (wrap_mode, margin width).
+--- Saved view-level properties of the origin buffer (wrap_mode).
 -- Textadept does not save/restore these on buffer switch, so we handle them.
 reduxbuffer.origin_buffer_state = nil
 
@@ -265,6 +265,13 @@ function reduxbuffer:show()
     self.origin_buffer = buffer
     self.origin_key_mode = keys.mode
     self:_save_origin_buffer_state()
+    -- Remember the line number margin width of the buffer we are leaving,
+    -- so it can be restored when returning to a normal buffer (see manage_line_number_margin).
+    -- Captured here, before _create_target() hides it,
+    -- because the buffer.new() switch fires BUFFER_AFTER_SWITCH before target._textredux is set.
+    if not buffer._textredux and view._textredux_margin_width == nil then
+      view._textredux_margin_width = view.margin_width_n[1]
+    end
   end
   if not self:is_attached() then self:_create_target() end
   if not self:is_showing() then view:goto_buffer(_BUFFERS[self.target]) end
@@ -516,9 +523,17 @@ end
 
 -- Begin private code.
 
+-- True while _create_target's buffer.new() runs.
+-- buffer.new() fires BUFFER_AFTER_SWITCH before target._textredux is set,
+-- so manage_line_number_margin would misread the new buffer as a normal buffer and clobber the saved margin width;
+-- this flag makes it skip that transient switch.
+local creating_target = false
+
 -- Create a new buffer and store a reference in the `target` attribute.
 function reduxbuffer:_create_target()
+  creating_target = true
   local target = buffer.new()
+  creating_target = false
   target._textredux = self
   target:set_lexer('text')
   target.eol_mode = buffer.EOL_LF
@@ -550,9 +565,9 @@ function reduxbuffer:_save_origin_buffer_state()
   -- Fold state, cursor position and scroll offset are handled by Textadept's
   -- built-in save_buffer_state/restore_buffer_state (core/ui.lua) which fires
   -- on BUFFER_BEFORE_SWITCH / BUFFER_AFTER_SWITCH.
+  -- The line number margin is handled separately by manage_line_number_margin.
   self.origin_buffer_state = {
     wrap_mode = self.origin_buffer.wrap_mode,
-    margin_width_n_1 = self.origin_buffer.margin_width_n[1],
   }
 end
 
@@ -565,7 +580,6 @@ function reduxbuffer:_restore_origin_buffer_state()
   local state = self.origin_buffer_state
   if not state then return end
   self.origin_buffer.wrap_mode = state.wrap_mode
-  self.origin_buffer.margin_width_n[1] = state.margin_width_n_1
   self.origin_buffer_state = nil
 end
 
@@ -580,7 +594,6 @@ function reduxbuffer:_restore_origin_buffer()
     local state = self.origin_buffer_state
     if state then
       buffer.wrap_mode = state.wrap_mode
-      buffer.margin_width_n[1] = state.margin_width_n_1
       self.origin_buffer_state = nil
     end
     return
@@ -682,5 +695,22 @@ events.connect(events.RESET_BEFORE, _on_quit)
 events.connect(events.BUFFER_AFTER_SWITCH, function()
   buffer._folds = nil
 end)
+
+-- Keep the line number margin hidden for Textredux buffers and restore the previous width when returning to a normal buffer.
+-- The margin is a view-level property that Textadept only resizes on BUFFER_NEW/FILE_OPENED/ZOOM (never on a plain buffer switch),
+-- so leaving a Textredux buffer by a switch rather than close() would otherwise leave line numbers hidden on the next buffer.
+-- The width to restore is captured in show() (per view) before the buffer is hidden.
+local function manage_line_number_margin()
+  if creating_target then return end
+  if buffer._textredux then
+    if view._textredux_margin_width == nil then view._textredux_margin_width = view.margin_width_n[1] end
+    view.margin_width_n[1] = 0
+  elseif view._textredux_margin_width ~= nil then
+    view.margin_width_n[1] = view._textredux_margin_width
+    view._textredux_margin_width = nil
+  end
+end
+events.connect(events.BUFFER_AFTER_SWITCH, manage_line_number_margin)
+events.connect(events.VIEW_AFTER_SWITCH, manage_line_number_margin)
 
 return M
