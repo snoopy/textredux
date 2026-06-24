@@ -145,6 +145,28 @@ local function set_style_property(t, number, value)
   if value ~= nil then t[number] = value end
 end
 
+-- Normalize a theme color value to the '#rrggbb' form textredux stores.
+-- Theme colors may be Scintilla BGR integers or '0xBBGGRR' strings (the latter from color.rgb2bgr);
+-- both convert via tonumber + color_to_string.
+local function to_hex(color)
+  if type(color) == 'number' then return color_to_string(color) end
+  local numeric = tonumber(color) -- handles '0xBBGGRR' (and decimal) strings
+  return numeric and color_to_string(numeric) or color -- fall back to an existing '#rrggbb'/'rrggbb'
+end
+
+-- Resolve a style's fore/back color. An explicit value (set on the style or via a derivation/override) wins;
+-- otherwise the color is looked up from the active theme via the style's `_theme` key in `view.styles`.
+-- This lookup happens here, at apply time (on buffer events, after the theme is applied), rather than when the module loads
+-- under Textadept 13 `view.styles` is not yet populated at module-load time, so resolving eagerly would yield no color.
+local function resolve_color(value, side)
+  if value[side] then return string_to_color(value[side]) end
+  if value._theme and view.styles then
+    local style = view.styles[value._theme]
+    local color = style and style[side]
+    if color then return string_to_color(to_hex(color)) end
+  end
+end
+
 -- Activate Textredux styles in a buffer.
 function M.activate_styles()
   if not buffer._textredux then return end
@@ -155,8 +177,8 @@ function M.activate_styles()
         set_style_property(buffer.style_bold, v.number, v.bold)
         set_style_property(buffer.style_italic, v.number, v.italics)
         set_style_property(buffer.style_underline, v.number, v.underlined)
-        set_style_property(buffer.style_fore, v.number, string_to_color(v.fore))
-        set_style_property(buffer.style_back, v.number, string_to_color(v.back))
+        set_style_property(buffer.style_fore, v.number, resolve_color(v, 'fore'))
+        set_style_property(buffer.style_back, v.number, resolve_color(v, 'back'))
         set_style_property(buffer.style_eol_filled, v.number, v.eolfilled)
         set_style_property(buffer.style_character_set, v.number, v.characterset)
         set_style_property(buffer.style_case, v.number, v.case)
@@ -169,52 +191,102 @@ function M.activate_styles()
   end
 end
 
--- Pre-defined style numbers.
-local default_styles = {
-  nothing = 1,
-  whitespace = 2,
-  comment = 3,
-  string = 4,
-  number = 5,
-  keyword = 6,
-  identifier = 7,
-  operator = 8,
-  error = 9,
-  preproc = 10,
-  constant = 11,
-  variable = 12,
-  ['function'] = 13,
-  class = 14,
-  type = 15,
-  default = 33,
-  line_number = 34,
-  bracelight = 35,
-  bracebad = 36,
-  controlchar = 37,
-  indentguide = 38,
-  calltip = 39,
+-- Predefined Scintilla styles.
+-- These keep their fixed Scintilla style numbers, which the theme colors directly, so applying them as-is works.
+-- The number doubles as the `view.styles` lookup key.
+local predefined_styles = {
+  default = buffer.STYLE_DEFAULT,
+  line_number = buffer.STYLE_LINENUMBER,
+  bracelight = buffer.STYLE_BRACELIGHT,
+  bracebad = buffer.STYLE_BRACEBAD,
+  controlchar = buffer.STYLE_CONTROLCHAR,
+  indentguide = buffer.STYLE_INDENTGUIDE,
+  calltip = buffer.STYLE_CALLTIP,
 }
 
--- Set default styles by parsing buffer properties.
-for k, v in pairs(default_styles) do
-  M[k] = { number = v, apply = apply }
-  local style = buffer.property['style.' .. k]:gsub('[$%%]%b()', function(key)
+-- Lexer-tag styles. Under Textadept 13 the theme colors these via lexer tag names rather than fixed Scintilla slots,
+-- so we assign them fresh style numbers (above STYLE_LASTPREDEFINED) that @{activate_styles} colorizes.
+-- This makes both, direct use (`style.number`) and derivations (`style.number .. {...}`) work.
+-- They are looked up in `view.styles` by tag name; `preproc` is the only name that differs from its tag.
+local tag_styles = {
+  'nothing',
+  'whitespace',
+  'comment',
+  'string',
+  'number',
+  'keyword',
+  'identifier',
+  'operator',
+  'error',
+  'preproc',
+  'constant',
+  'variable',
+  'function',
+  'class',
+  'type',
+}
+local tag_lookup = { preproc = 'preprocessor' }
+
+-- Read a base style's visual properties eagerly from the active theme.
+-- This is a best-effort fast path: under Textadept 13 `view.styles` is usually empty at module-load time,
+-- in which case nothing is returned and colors are resolved later by @{resolve_color}.
+-- Older Textadept used `style.*` buffer properties, which serve as a fallback.
+local function read_base_style(lookup_key, legacy_name)
+  if view.styles then
+    local style = view.styles[lookup_key]
+    if style then
+      local props = {}
+      if style.fore then props.fore = to_hex(style.fore) end
+      if style.back then props.back = to_hex(style.back) end
+      if style.font then props.font = style.font end
+      if style.size then props.size = tonumber(style.size) end
+      if style.bold then props.bold = true end
+      if style.italic then props.italics = true end
+      if style.underline then props.underlined = true end
+      if style.eol_filled then props.eolfilled = true end
+      return props
+    end
+  end
+  -- Legacy fallback: parse the `style.<name>` buffer property string.
+  local props = {}
+  local legacy_style = buffer.property['style.' .. legacy_name]:gsub('[$%%]%b()', function(key)
     return buffer.property[key:sub(3, -2)]
   end)
-  local fore = style:match('fore:(%d+)')
-  if fore then M[k]['fore'] = color_to_string(tonumber(fore)) end
-  local back = style:match('back:(%d+)')
-  if back then M[k]['back'] = color_to_string(tonumber(back)) end
-  local font = style:match('font:([%a ]+)')
-  if font then M[k]['font'] = font end
-  local fontsize = style:match('size:(%d+)')
-  if fontsize then M[k]['size'] = tonumber(fontsize) end
+  local fore = legacy_style:match('fore:(%d+)')
+  if fore then props.fore = color_to_string(tonumber(fore)) end
+  local back = legacy_style:match('back:(%d+)')
+  if back then props.back = color_to_string(tonumber(back)) end
+  local font = legacy_style:match('font:([%a ]+)')
+  if font then props.font = font end
+  local size = legacy_style:match('size:(%d+)')
+  if size then props.size = tonumber(size) end
   -- Assuming "notbold" etc. are never used in default styles.
-  if style:match('italics') then M[k]['italics'] = true end
-  if style:match('bold') then M[k]['bold'] = true end
-  if style:match('underlined') then M[k]['underlined'] = true end
-  if style:match('eolfilled') then M[k]['eolfilled'] = true end
-  setmetatable(M[k], { __concat = style_merge })
+  if legacy_style:match('italics') then props.italics = true end
+  if legacy_style:match('bold') then props.bold = true end
+  if legacy_style:match('underlined') then props.underlined = true end
+  if legacy_style:match('eolfilled') then props.eolfilled = true end
+  return props
+end
+
+-- Build the predefined base styles (fixed style numbers).
+for name, number in pairs(predefined_styles) do
+  local style = read_base_style(number, name)
+  style.number = number
+  style._theme = number
+  style.apply = apply
+  M[name] = setmetatable(style, { __concat = style_merge })
+end
+
+-- Build the lexer-tag base styles (fresh, colorizable style numbers).
+local next_number = STYLE_LASTPREDEFINED
+for _, name in ipairs(tag_styles) do
+  next_number = next_number + 1
+  local lookup = tag_lookup[name] or name
+  local style = read_base_style(lookup, name)
+  style.number = next_number
+  style._theme = lookup
+  style.apply = apply
+  M[name] = setmetatable(style, { __concat = style_merge })
 end
 
 -- Defines a new style using the given table of style properties.
